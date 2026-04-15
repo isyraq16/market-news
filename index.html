@@ -634,15 +634,6 @@ async function loadSpark(sym,W,H){
     }catch(e){}
 }
 
-// ══════════ TAB SWITCHING ══════════
-function switchTab(tab){
-    document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active'));
-    document.querySelectorAll('.bnav').forEach(b=>b.classList.remove('active'));
-    document.getElementById('pane-'+tab).classList.add('active');
-    const btn=document.getElementById('bn-'+tab); if(btn)btn.classList.add('active');
-    window.scrollTo({top:0,behavior:'smooth'});
-}
-
 // ══════════ FETCH ══════════
 async function fetchAll(){
     try{
