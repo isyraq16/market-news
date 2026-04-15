@@ -74,13 +74,33 @@
             .bottom-nav { display:none !important; }
             .main-wrap {
                 display:grid;
-                grid-template-areas:"sectors sectors" "news sidebar";
+                grid-template-areas:"world world" "sectors sectors" "news sidebar";
                 grid-template-columns:1fr 300px;
             }
+            #pane-world   { grid-area:world;   border-bottom:1px solid var(--bd); }
             #pane-sectors { grid-area:sectors; border-bottom:1px solid var(--bd); }
             #pane-news    { grid-area:news;    border-right:1px solid var(--bd); }
             #pane-markets { grid-area:sidebar; background:var(--s1); }
         }
+
+        /* ─── WORLD MAP ─── */
+        .map-wrap { background:var(--bg); padding:.8rem 1rem; }
+        .map-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:.6rem; flex-wrap:wrap; gap:.4rem; }
+        .map-title  { font-size:.82rem; font-weight:600; }
+        .map-legend { display:flex; gap:.8rem; }
+        .map-leg-item { display:flex; align-items:center; gap:.3rem; font-size:.58rem; color:var(--t2); font-family:'IBM Plex Mono',monospace; }
+        .map-leg-dot  { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+        #map-div { width:100%; height:280px; border-radius:6px; overflow:hidden; background:var(--s1); }
+        @media(min-width:900px){ #map-div { height:320px; } }
+        .map-region-pills { display:flex; gap:.35rem; flex-wrap:wrap; margin-top:.65rem; }
+        .map-pill { font-size:.6rem; padding:.2rem .55rem; border-radius:20px; border:1px solid var(--bd2); color:var(--t2); font-family:'IBM Plex Mono',monospace; cursor:pointer; transition:all .15s; }
+        .map-pill:hover { border-color:var(--text); color:var(--text); }
+        .map-pill.active { border-color:var(--text); color:var(--bg); background:var(--text); }
+        .map-pill.green  { border-color:rgba(61,186,111,.4); color:var(--green); }
+        .map-pill.red    { border-color:rgba(224,80,80,.4);  color:var(--red); }
+        .map-tip { font-size:.65rem; color:var(--t3); font-style:italic; margin-top:.4rem; font-family:'IBM Plex Mono',monospace; }
+        .map-loading { display:flex; align-items:center; justify-content:center; height:280px; }
+        .map-loading p { font-family:'IBM Plex Mono',monospace; font-size:.65rem; letter-spacing:.15em; color:var(--t3); animation:sk 1.2s ease infinite; }
 
         /* ─── DAILY BRIEF ─── */
         .brief-card {
@@ -202,7 +222,7 @@
         .bottom-nav {
             position:fixed; bottom:0; left:0; right:0; z-index:400;
             background:var(--s1); border-top:1px solid var(--bd);
-            display:grid; grid-template-columns:repeat(4,1fr);
+            display:grid; grid-template-columns:repeat(5,1fr);
             height:calc(var(--nav-h) + env(safe-area-inset-bottom));
             padding-bottom:env(safe-area-inset-bottom);
         }
@@ -332,6 +352,23 @@
 <!-- MAIN -->
 <div class="main-wrap">
 
+    <!-- ── WORLD MAP TAB ── -->
+    <div id="pane-world" class="tab-pane">
+        <div class="map-wrap">
+            <div class="map-header">
+                <div class="map-title">🌍 Where is today's news coming from?</div>
+                <div class="map-legend">
+                    <div class="map-leg-item"><div class="map-leg-dot" style="background:#3dba6f"></div>Good news</div>
+                    <div class="map-leg-item"><div class="map-leg-dot" style="background:#e05050"></div>Bad news</div>
+                    <div class="map-leg-item"><div class="map-leg-dot" style="background:#c9a55a"></div>Mixed</div>
+                </div>
+            </div>
+            <div id="map-div"><div class="map-loading"><p>Loading world map...</p></div></div>
+            <div class="map-region-pills" id="map-pills"></div>
+            <div class="map-tip" id="map-tip">Tap a country on the map or a button above to filter news by region</div>
+        </div>
+    </div>
+
     <!-- ── SECTORS TAB ── -->
     <div id="pane-sectors" class="tab-pane">
         <div class="sector-wrap">
@@ -436,6 +473,11 @@
     <button class="bnav active" id="bn-news" onclick="switchTab('news')">
         <span class="bnav-ic">📰</span>
         <span class="bnav-lbl">News</span>
+        <div class="bnav-dot"></div>
+    </button>
+    <button class="bnav" id="bn-world" onclick="switchTab('world')">
+        <span class="bnav-ic">🌍</span>
+        <span class="bnav-lbl">World</span>
         <div class="bnav-dot"></div>
     </button>
     <button class="bnav" id="bn-markets" onclick="switchTab('markets')">
@@ -839,6 +881,240 @@ function closeChart(e){
     document.body.style.overflow='';
 }
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeChart(null);});
+
+// ══════════ WORLD MAP ══════════
+let mapReady = false, mapRoot = null, mapCountryFilter = null;
+
+function switchTab(tab) {
+    document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active'));
+    document.querySelectorAll('.bnav').forEach(b=>b.classList.remove('active'));
+    document.getElementById('pane-'+tab).classList.add('active');
+    const btn=document.getElementById('bn-'+tab); if(btn)btn.classList.add('active');
+    window.scrollTo({top:0,behavior:'smooth'});
+    if(tab==='world') initMap();
+}
+
+function buildMapData(news) {
+    // Aggregate per country: count, positive, negative
+    const countries = {};
+    for (const n of news) {
+        for (const c of (n.countries || [])) {
+            if (!countries[c.code]) countries[c.code] = { code: c.code, name: c.name, total: 0, pos: 0, neg: 0, items: [] };
+            countries[c.code].total++;
+            if (n.sentiment === 'bullish') countries[c.code].pos++;
+            if (n.sentiment === 'bearish') countries[c.code].neg++;
+            countries[c.code].items.push(n);
+        }
+    }
+    return Object.values(countries);
+}
+
+function countryColor(d) {
+    if (!d || d.total === 0) return 0x1a1a1a;
+    const ratio = d.pos / (d.pos + d.neg || 1);
+    if (d.pos === 0 && d.neg === 0) return 0xc9a55a; // neutral
+    if (ratio >= 0.65) return 0x2a8a52;  // mostly good
+    if (ratio <= 0.35) return 0x8a2a2a;  // mostly bad
+    return 0x8a7020; // mixed
+}
+
+function initMap() {
+    if (mapReady) { updateMap(); return; }
+    const urls = [
+        'https://cdn.amcharts.com/lib/5/index.js',
+        'https://cdn.amcharts.com/lib/5/map.js',
+        'https://cdn.amcharts.com/lib/5/geodata/worldLow.js',
+        'https://cdn.amcharts.com/lib/5/themes/Animated.js',
+    ];
+    function loadNext(i) {
+        if (i >= urls.length) { buildMap(); return; }
+        const s = document.createElement('script');
+        s.src = urls[i];
+        s.onload = () => loadNext(i + 1);
+        s.onerror = () => { document.getElementById('map-div').innerHTML = '<div class="map-loading"><p>Map failed to load — check internet connection</p></div>'; };
+        document.head.appendChild(s);
+    }
+    loadNext(0);
+}
+
+function buildMap() {
+    mapReady = true;
+    const mapData = buildMapData(allNews);
+
+    const root = am5.Root.new('map-div');
+    mapRoot = root;
+    root.setThemes([am5themes_Animated.new(root)]);
+
+    const chart = root.container.children.push(
+        am5map.MapChart.new(root, {
+            panX: 'translateX',
+            panY: 'translateY',
+            projection: am5map.geoNaturalEarth1(),
+            paddingBottom: 0, paddingTop: 0, paddingLeft: 0, paddingRight: 0,
+        })
+    );
+
+    // Dark ocean background
+    chart.set('background', am5.Rectangle.new(root, { fill: am5.color(0x050510), fillOpacity: 1 }));
+
+    // Countries layer
+    const polySeries = chart.series.push(
+        am5map.MapPolygonSeries.new(root, { geoJSON: am5geodata_worldLow })
+    );
+
+    polySeries.mapPolygons.template.setAll({
+        fill: am5.color(0x1a1a1a),
+        stroke: am5.color(0x2a2a2a),
+        strokeWidth: 0.4,
+        interactive: true,
+        tooltipText: '{name}',
+    });
+
+    polySeries.mapPolygons.template.states.create('hover', { fill: am5.color(0x3a3a3a) });
+
+    // Color active countries
+    const dataMap = {};
+    mapData.forEach(d => { dataMap[d.code] = d; });
+
+    polySeries.events.on('datavalidated', () => {
+        polySeries.mapPolygons.each(poly => {
+            const id = poly.dataItem.get('id');
+            const d  = dataMap[id];
+            if (d) {
+                poly.set('fill', am5.color(countryColor(d)));
+                poly.set('tooltipText', `[bold]${d.name}[/]\n${d.total} stor${d.total===1?'y':'ies'} today\n${d.pos} positive · ${d.neg} negative`);
+            }
+        });
+    });
+
+    // Click a country → filter news
+    polySeries.mapPolygons.template.events.on('click', ev => {
+        const id  = ev.target.dataItem.get('id');
+        const d   = dataMap[id];
+        if (!d) return;
+        filterByCountry(d.code, d.name);
+        // Highlight active country
+        polySeries.mapPolygons.each(p => p.set('strokeWidth', 0.4));
+        ev.target.set('strokeWidth', 2);
+        ev.target.set('stroke', am5.color(0xffffff));
+    });
+
+    // Bubble series for news count dots
+    const bubbleSeries = chart.series.push(
+        am5map.MapPointSeries.new(root, {
+            latitudeField: 'lat',
+            longitudeField: 'lon',
+        })
+    );
+
+    const COORDS = {
+        US:{lat:38,lon:-97}, CN:{lat:35,lon:105}, JP:{lat:36,lon:138},
+        KR:{lat:37,lon:127}, TW:{lat:23.5,lon:121}, IN:{lat:20,lon:78},
+        GB:{lat:52,lon:-1},  DE:{lat:51,lon:10},   FR:{lat:46,lon:2},
+        RU:{lat:60,lon:90},  IR:{lat:32,lon:53},   SA:{lat:24,lon:45},
+        AU:{lat:-25,lon:134},CA:{lat:56,lon:-106},  BR:{lat:-10,lon:-55},
+        MX:{lat:23,lon:-102},NL:{lat:52,lon:5.2},  CH:{lat:47,lon:8},
+        SG:{lat:1.3,lon:103.8},IL:{lat:31.5,lon:35},UA:{lat:49,lon:32},
+        'EU-':{lat:50,lon:14},
+    };
+
+    bubbleSeries.bullets.push(() => {
+        const circle = am5.Circle.new(root, {
+            radius: 6,
+            fill: am5.color(0xffffff),
+            fillOpacity: 0.25,
+            stroke: am5.color(0xffffff),
+            strokeOpacity: 0.6,
+            strokeWidth: 1,
+            tooltipText: '{tooltip}',
+            cursorOverStyle: 'pointer',
+        });
+        circle.events.on('click', ev => {
+            const code = ev.target.dataItem.dataContext.code;
+            const name = ev.target.dataItem.dataContext.name;
+            filterByCountry(code, name);
+        });
+        return am5.Bullet.new(root, { sprite: circle });
+    });
+
+    const bubbleData = mapData
+        .filter(d => COORDS[d.code])
+        .map(d => ({
+            lat: COORDS[d.code].lat,
+            lon: COORDS[d.code].lon,
+            code: d.code,
+            name: d.name,
+            tooltip: `${d.name}: ${d.total} stor${d.total===1?'y':'ies'}\n${d.pos} good · ${d.neg} bad`,
+        }));
+
+    bubbleSeries.data.setAll(bubbleData);
+    updateMapPills(mapData);
+}
+
+function updateMap() {
+    if (!mapReady) return;
+    // Rebuild map with fresh news data
+    if (mapRoot) { mapRoot.dispose(); mapRoot = null; mapReady = false; }
+    document.getElementById('map-div').innerHTML = '<div class="map-loading"><p>Updating map...</p></div>';
+    setTimeout(buildMap, 100);
+}
+
+function filterByCountry(code, name) {
+    mapCountryFilter = code;
+    // Update pill highlights
+    document.querySelectorAll('.map-pill').forEach(p => {
+        p.classList.toggle('active', p.dataset.code === code);
+    });
+    document.getElementById('map-tip').textContent = `Showing news for: ${name} — tap again to clear filter`;
+    // Jump to news tab with country filter applied
+    switchTab('news');
+    renderNewsFiltered(code, name);
+}
+
+function clearCountryFilter() {
+    mapCountryFilter = null;
+    document.querySelectorAll('.map-pill').forEach(p => p.classList.remove('active'));
+    renderNews();
+}
+
+function renderNewsFiltered(code, name) {
+    const list = allNews.filter(n => n.countries && n.countries.some(c => c.code === code));
+    const bull = list.filter(n=>n.sentiment==='bullish').length;
+    const bear = list.filter(n=>n.sentiment==='bearish').length;
+
+    // Show a banner at top of news list
+    const banner = `<div style="padding:.75rem 1rem;background:var(--s2);border-bottom:1px solid var(--bd);display:flex;justify-content:space-between;align-items:center">
+        <div style="font-size:.72rem">📍 <strong>${name}</strong> — ${list.length} stor${list.length===1?'y':'ies'} · ${bull} good · ${bear} bad</div>
+        <button onclick="clearCountryFilter()" style="background:none;border:1px solid var(--bd2);color:var(--t2);padding:.18rem .45rem;border-radius:4px;font-size:.58rem;cursor:pointer;font-family:'IBM Plex Mono',monospace">✕ Clear</button>
+    </div>`;
+
+    if (!list.length) {
+        document.getElementById('news-list').innerHTML = banner + `<div class="empty"><p>No news tagged for ${name}</p></div>`;
+        return;
+    }
+    document.getElementById('news-list').innerHTML = banner + list.map(n => buildNewsCard(n)).join('');
+}
+
+function updateMapPills(mapData) {
+    const sorted = [...mapData].sort((a,b) => b.total - a.total).slice(0, 12);
+    document.getElementById('map-pills').innerHTML = sorted.map(d => {
+        const cls = d.pos > d.neg ? 'green' : d.neg > d.pos ? 'red' : '';
+        return `<span class="map-pill ${cls}" data-code="${d.code}" onclick="filterByCountry('${d.code}','${d.name}')">${d.name} ${d.total}</span>`;
+    }).join('');
+}
+
+function buildNewsCard(n) {
+    const badgeText = n.sentiment==='bullish'?'✅ Positive news':n.sentiment==='bearish'?'⚠️ Negative news':'😐 Neutral';
+    const badgeCls  = n.sentiment==='bullish'?'good':n.sentiment==='bearish'?'bad':'neutral';
+    const TAG_LABELS = {'ALL MARKETS':'🌍 Affects all stocks','NVDA':'💚 Affects Nvidia','AI SECTOR':'🤖 AI stocks','AAPL':'Affects Apple','TSLA':'Affects Tesla','META':'Affects Meta','AMZN':'Affects Amazon','MSFT':'Affects Microsoft','GOOGL':'Affects Alphabet','SEMICONDUCTORS':'💾 Chip makers','OIL':'🛢️ Oil price','ENERGY':'⚡ Energy stocks','RATES':'🏦 Interest rates','TRADE':'🚢 Global trade','MACRO':'🌐 Economy','EARNINGS SEASON':'📋 Earnings reports'};
+    const affects = n.impacts.flatMap(i=>i.tags.map(t=>({label:TAG_LABELS[t]||t,color:i.color})));
+    return `<a class="ni${n.sentiment==='bullish'?' bull':n.sentiment==='bearish'?' bear':''}" href="${n.link}" target="_blank" rel="noopener">
+        <div class="n-meta"><span class="n-src">${n.source}</span><span class="n-age">${ago(n.date)}</span><span class="n-badge ${badgeCls}">${badgeText}</span></div>
+        <div class="n-ttl">${n.title}</div>
+        ${n.summary?`<div class="n-sum">${n.summary}</div>`:''}
+        ${affects.length?`<div class="n-affects"><span class="n-aff-lbl">Affects:</span>${affects.map(a=>`<span class="n-aff-tag" style="color:${a.color};border-color:${a.color}33;background:${a.color}0c">${a.label}</span>`).join('')}</div>`:''}
+    </a>`;
+}
 
 // ══════════ PWA INSTALL ══════════
 let deferredPrompt=null;

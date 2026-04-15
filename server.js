@@ -130,6 +130,50 @@ const IMPACT_MAP = [
     { keys: ['ipo', 'listing', 'public offering'],                                             tags: ['IPO', 'NEW LISTINGS'],                  color: '#c9a55a' },
 ];
 
+// ── Geo-tagging — keyword → country ──────────────────────────────
+const GEO_MAP = [
+    { keys: ['united states', 'wall street', 'fed ', 'federal reserve', 'nasdaq', 'nyse', 's&p', 'dow jones', 'silicon valley', 'u.s.', ' us ', 'american', 'america', 'washington', 'treasury', 'sec ', 'irs'], code: 'US', name: 'USA' },
+    { keys: ['china', 'beijing', 'chinese', 'prc', 'hong kong', 'yuan', 'renminbi', 'alibaba', 'tencent', 'baidu', 'shenzhen', 'shanghai'], code: 'CN', name: 'China' },
+    { keys: ['taiwan', 'tsmc', 'taipei', 'taiwanese'], code: 'TW', name: 'Taiwan' },
+    { keys: ['japan', 'tokyo', 'japanese', 'yen', 'nikkei', 'boj ', 'softbank', 'toyota'], code: 'JP', name: 'Japan' },
+    { keys: ['south korea', 'korea', 'seoul', 'samsung', 'kospi', 'hyundai', 'korean'], code: 'KR', name: 'S. Korea' },
+    { keys: ['india', 'mumbai', 'delhi', 'rupee', 'sensex', 'nse ', 'bse ', 'reliance', 'tata', 'infosys'], code: 'IN', name: 'India' },
+    { keys: ['uk', 'britain', 'british', 'london', 'ftse', 'pound sterling', 'bank of england', 'england', 'boe '], code: 'GB', name: 'UK' },
+    { keys: ['germany', 'german', 'berlin', 'frankfurt', 'dax', 'deutsche', 'bundesbank', 'volkswagen', 'siemens'], code: 'DE', name: 'Germany' },
+    { keys: ['france', 'french', 'paris', 'cac 40', 'macron', 'lvmh', 'total'], code: 'FR', name: 'France' },
+    { keys: ['europe', 'european', 'eu ', 'ecb', 'eurozone', 'euro zone', 'brussels'], code: 'EU-', name: 'Europe' },
+    { keys: ['russia', 'russian', 'moscow', 'putin', 'ruble', 'gazprom', 'rosneft'], code: 'RU', name: 'Russia' },
+    { keys: ['iran', 'tehran', 'iranian', 'persian', 'hormuz', 'khamenei'], code: 'IR', name: 'Iran' },
+    { keys: ['saudi', 'riyadh', 'aramco', 'mbs', 'neom'], code: 'SA', name: 'Saudi Arabia' },
+    { keys: ['opec', 'oil cartel', 'crude oil production cut'], code: 'SA', name: 'OPEC' },
+    { keys: ['canada', 'toronto', 'ottawa', 'tsx', 'canadian dollar', 'shopify'], code: 'CA', name: 'Canada' },
+    { keys: ['australia', 'sydney', 'melbourne', 'asx', 'australian dollar', 'rba '], code: 'AU', name: 'Australia' },
+    { keys: ['brazil', 'são paulo', 'bovespa', 'real ', 'petrobras'], code: 'BR', name: 'Brazil' },
+    { keys: ['mexico', 'mexican', 'peso', 'pemex', 'banxico'], code: 'MX', name: 'Mexico' },
+    { keys: ['asml', 'netherlands', 'dutch', 'amsterdam'], code: 'NL', name: 'Netherlands' },
+    { keys: ['switzerland', 'swiss', 'zurich', 'ubs', 'credit suisse', 'nestlé'], code: 'CH', name: 'Switzerland' },
+    { keys: ['singapore', 'sgx', 'mas '], code: 'SG', name: 'Singapore' },
+    { keys: ['israel', 'tel aviv', 'shekel'], code: 'IL', name: 'Israel' },
+    { keys: ['ukraine', 'kyiv', 'zelensky', 'ukrainian'], code: 'UA', name: 'Ukraine' },
+];
+
+function geoTag(title, summary) {
+    const text = (title + ' ' + (summary || '')).toLowerCase();
+    const found = [];
+    for (const g of GEO_MAP) {
+        if (g.keys.some(k => text.includes(k))) {
+            // Avoid duplicates (EU can match multiple)
+            if (!found.find(f => f.code === g.code)) {
+                found.push({ code: g.code, name: g.name });
+            }
+            if (found.length >= 3) break;
+        }
+    }
+    // Most finance news defaults to US if nothing else matched
+    if (!found.length) found.push({ code: 'US', name: 'USA' });
+    return found;
+}
+
 function tagNews(title, summary) {
     const text   = (title + ' ' + summary).toLowerCase();
     const impacts = [];
@@ -165,9 +209,10 @@ async function fetchNews() {
                     summary:  item.contentSnippet || item.summary || '',
                     link:     item.link || '#',
                     date:     item.pubDate ? new Date(item.pubDate).toISOString() : new Date().toISOString(),
-                    source:   feed.name,
-                    impacts:  tagNews(item.title || '', item.contentSnippet || ''),
-                    sentiment: sentiment(item.title || '')
+                    source:    feed.name,
+                    impacts:   tagNews(item.title || '', item.contentSnippet || ''),
+                    sentiment: sentiment(item.title || ''),
+                    countries: geoTag(item.title || '', item.contentSnippet || '')
                 });
             }
         } catch (e) {
