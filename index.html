@@ -655,6 +655,8 @@ async function fetchAll(){
         ['ref-btn','ref-btn-2'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent='Updated '+ts+' · tap to refresh';});
         startCountdown();
         preloadMapScripts();
+        // On desktop all panes are visible — init map automatically after data loads
+        if (window.innerWidth >= 900) initMap();
     }catch(e){
         ['ref-btn','ref-btn-2'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent='Connection error — tap to retry';});
     }
