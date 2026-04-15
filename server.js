@@ -37,22 +37,30 @@ function fetch(url) {
 }
 
 // ── Finnhub Market Data ───────────────────────────────────────────
-// Using ETFs as index proxies (Finnhub free tier doesn't support ^IXIC etc)
 const MARKET_SYMBOLS = [
-    { symbol: 'QQQ',  name: 'NASDAQ 100', isIndex: true  },
-    { symbol: 'SPY',  name: 'S&P 500',    isIndex: true  },
-    { symbol: 'DIA',  name: 'Dow Jones',  isIndex: true  },
-    { symbol: 'NVDA', name: 'Nvidia',     isIndex: false },
-    { symbol: 'AAPL', name: 'Apple',      isIndex: false },
-    { symbol: 'TSLA', name: 'Tesla',      isIndex: false },
-    { symbol: 'META', name: 'Meta',       isIndex: false },
-    { symbol: 'MSFT', name: 'Microsoft',  isIndex: false },
-    { symbol: 'AMZN', name: 'Amazon',     isIndex: false },
-    { symbol: 'GOOGL', name: 'Alphabet',  isIndex: false },
-    { symbol: 'ASML', name: 'ASML',       isIndex: false },
-    { symbol: 'TSM',  name: 'TSMC',       isIndex: false },
-    { symbol: 'PLTR', name: 'Palantir',   isIndex: false },
-    { symbol: 'AMD',  name: 'AMD',        isIndex: false },
+    { symbol: 'QQQ',  name: 'NASDAQ 100', type: 'index'  },
+    { symbol: 'SPY',  name: 'S&P 500',    type: 'index'  },
+    { symbol: 'DIA',  name: 'Dow Jones',  type: 'index'  },
+    { symbol: 'NVDA', name: 'Nvidia',     type: 'stock'  },
+    { symbol: 'AAPL', name: 'Apple',      type: 'stock'  },
+    { symbol: 'TSLA', name: 'Tesla',      type: 'stock'  },
+    { symbol: 'META', name: 'Meta',       type: 'stock'  },
+    { symbol: 'MSFT', name: 'Microsoft',  type: 'stock'  },
+    { symbol: 'AMZN', name: 'Amazon',     type: 'stock'  },
+    { symbol: 'GOOGL', name: 'Alphabet',  type: 'stock'  },
+    { symbol: 'ASML', name: 'ASML',       type: 'stock'  },
+    { symbol: 'TSM',  name: 'TSMC',       type: 'stock'  },
+    { symbol: 'PLTR', name: 'Palantir',   type: 'stock'  },
+    { symbol: 'AMD',  name: 'AMD',        type: 'stock'  },
+    // Sector ETFs
+    { symbol: 'XLK',  name: 'Technology',    type: 'sector' },
+    { symbol: 'XLF',  name: 'Financials',    type: 'sector' },
+    { symbol: 'XLE',  name: 'Energy',        type: 'sector' },
+    { symbol: 'XLV',  name: 'Healthcare',    type: 'sector' },
+    { symbol: 'XLY',  name: 'Cons. Disc.',   type: 'sector' },
+    { symbol: 'XLI',  name: 'Industrials',   type: 'sector' },
+    { symbol: 'XLC',  name: 'Comm. Svcs',    type: 'sector' },
+    { symbol: 'XLB',  name: 'Materials',     type: 'sector' },
 ];
 
 async function fetchFinnhubQuote(symbol, apiKey) {
@@ -196,6 +204,21 @@ app.get('/api/news', async (req, res) => {
 app.get('/api/all', async (req, res) => {
     const [market, news] = await Promise.all([fetchMarket(), fetchNews()]);
     res.json({ market, news, updated: new Date().toISOString() });
+});
+
+app.get('/api/candles/:symbol', async (req, res) => {
+    const apiKey = process.env.FINNHUB_API_KEY;
+    if (!apiKey) return res.json({ c: [] });
+    const { symbol } = req.params;
+    const to   = Math.floor(Date.now() / 1000);
+    const from = to - 30 * 24 * 3600;
+    try {
+        const raw  = await fetch(`https://finnhub.io/api/v1/stock/candle?symbol=${encodeURIComponent(symbol)}&resolution=D&from=${from}&to=${to}&token=${apiKey}`);
+        const data = JSON.parse(raw);
+        res.json({ c: data.c || [] });
+    } catch(e) {
+        res.json({ c: [] });
+    }
 });
 
 app.listen(PORT, () => {

@@ -90,7 +90,9 @@
         .index-card {
             padding:1.2rem 2rem; border-right:1px solid var(--border);
             display:flex; justify-content:space-between; align-items:center;
+            cursor:pointer; transition:background .12s;
         }
+        .index-card:hover { background:var(--surface2); }
         .index-card:last-child { border-right:none; }
         .index-name { font-family:'Syne Mono',monospace; font-size:.62rem; letter-spacing:.15em; color:var(--text-2); text-transform:uppercase; margin-bottom:.3rem; }
         .index-price { font-family:'Cormorant Garamond',serif; font-size:1.6rem; font-weight:400; }
@@ -98,10 +100,32 @@
         .index-change.up   { color:var(--green); }
         .index-change.down { color:var(--red); }
         .index-change.flat { color:var(--text-2); }
-        .index-bar { width:60px; height:32px; }
+        .index-bar { width:80px; height:36px; }
+
+        /* ── SECTOR HEATMAP ── */
+        .sector-row {
+            background:var(--bg);
+            border-bottom:1px solid var(--border);
+            padding:1rem 2rem;
+        }
+        .sector-row-label {
+            font-family:'Syne Mono',monospace; font-size:.58rem; letter-spacing:.22em; color:var(--text-3);
+            text-transform:uppercase; margin-bottom:.7rem;
+        }
+        .sector-grid {
+            display:grid; grid-template-columns:repeat(8,1fr); gap:.4rem;
+        }
+        .sector-cell {
+            padding:.6rem .4rem; border-radius:2px; text-align:center;
+            cursor:pointer; transition:filter .12s, transform .1s;
+            position:relative; overflow:hidden;
+        }
+        .sector-cell:hover { filter:brightness(1.2); transform:translateY(-1px); }
+        .sector-name { font-family:'Syne Mono',monospace; font-size:.55rem; letter-spacing:.06em; color:#fff; opacity:.75; line-height:1.3; }
+        .sector-pct  { font-family:'Syne Mono',monospace; font-size:.72rem; font-weight:600; color:#fff; margin-top:.2rem; }
 
         /* ── MAIN LAYOUT ── */
-        .layout { display:grid; grid-template-columns:1fr 320px; gap:0; min-height:calc(100vh - 200px); }
+        .layout { display:grid; grid-template-columns:1fr 320px; gap:0; min-height:calc(100vh - 280px); }
 
         /* ── NEWS FEED ── */
         .news-panel { border-right:1px solid var(--border); }
@@ -155,22 +179,27 @@
         /* ── SIDEBAR ── */
         .sidebar { background:var(--surface); }
         .watchlist { }
-        .watchlist-head { padding:1rem 1.5rem; border-bottom:1px solid var(--border); background:var(--surface2); }
-        .watchlist-title { font-family:'Cormorant Garamond',serif; font-size:1.1rem; font-weight:400; }
-        .watchlist-item {
-            padding:.9rem 1.5rem; border-bottom:1px solid var(--border);
+        .watchlist-head {
+            padding:1rem 1.5rem; border-bottom:1px solid var(--border); background:var(--surface2);
             display:flex; justify-content:space-between; align-items:center;
-            transition:background .12s;
+        }
+        .watchlist-title { font-family:'Cormorant Garamond',serif; font-size:1.1rem; font-weight:400; }
+        .watchlist-hint { font-family:'Syne Mono',monospace; font-size:.55rem; color:var(--text-3); letter-spacing:.08em; }
+        .watchlist-item {
+            padding:.85rem 1.5rem; border-bottom:1px solid var(--border);
+            display:grid; grid-template-columns:1fr auto; align-items:center; gap:.5rem;
+            transition:background .12s; cursor:pointer;
         }
         .watchlist-item:hover { background:var(--surface2); }
-        .w-left .w-symbol { font-family:'Syne Mono',monospace; font-size:.8rem; letter-spacing:.08em; color:var(--gold); }
-        .w-left .w-name   { font-size:.7rem; color:var(--text-2); margin-top:.1rem; }
+        .w-left .w-symbol { font-family:'Syne Mono',monospace; font-size:.78rem; letter-spacing:.08em; color:var(--gold); }
+        .w-left .w-name   { font-size:.68rem; color:var(--text-2); margin-top:.1rem; }
         .w-right { text-align:right; }
-        .w-price  { font-family:'Syne Mono',monospace; font-size:.82rem; }
-        .w-change { font-family:'Syne Mono',monospace; font-size:.7rem; margin-top:.1rem; }
+        .w-price  { font-family:'Syne Mono',monospace; font-size:.8rem; }
+        .w-change { font-family:'Syne Mono',monospace; font-size:.68rem; margin-top:.1rem; }
         .w-change.up   { color:var(--green); }
         .w-change.down { color:var(--red); }
         .w-change.flat { color:var(--text-2); }
+        .w-spark { width:64px; height:28px; display:block; }
 
         /* ── SENTIMENT GAUGE ── */
         .sentiment-box { padding:1.2rem 1.5rem; border-bottom:1px solid var(--border); }
@@ -179,6 +208,33 @@
         .gauge-pointer { position:absolute; top:-4px; width:14px; height:14px; border-radius:50%; background:var(--text); border:2px solid var(--bg); transform:translateX(-50%); transition:left .5s ease; }
         .gauge-labels { display:flex; justify-content:space-between; font-family:'Syne Mono',monospace; font-size:.55rem; color:var(--text-3); letter-spacing:.08em; }
         .gauge-value { text-align:center; font-family:'Cormorant Garamond',serif; font-size:1.3rem; font-weight:400; }
+
+        /* ── TRADINGVIEW MODAL ── */
+        .tv-modal {
+            display:none; position:fixed; inset:0; z-index:10000;
+            background:rgba(6,6,15,.92); backdrop-filter:blur(6px);
+            align-items:center; justify-content:center;
+        }
+        .tv-modal.open { display:flex; }
+        .tv-modal-inner {
+            background:var(--surface); border:1px solid var(--border-lt);
+            border-radius:4px; width:min(1100px,96vw); height:min(680px,90vh);
+            display:flex; flex-direction:column; overflow:hidden;
+            box-shadow:0 24px 80px rgba(0,0,0,.6);
+        }
+        .tv-modal-head {
+            padding:.9rem 1.5rem; border-bottom:1px solid var(--border);
+            display:flex; justify-content:space-between; align-items:center;
+            background:var(--surface2);
+        }
+        .tv-modal-title { font-family:'Cormorant Garamond',serif; font-size:1.15rem; font-weight:400; }
+        .tv-modal-close {
+            background:none; border:1px solid var(--border-lt); color:var(--text-2);
+            width:28px; height:28px; border-radius:2px; cursor:pointer; font-size:.85rem;
+            display:flex; align-items:center; justify-content:center; transition:all .12s;
+        }
+        .tv-modal-close:hover { border-color:var(--red); color:var(--red); }
+        .tv-modal-body { flex:1; overflow:hidden; }
 
         /* ── LOADING ── */
         .loading-state { padding:3rem 2rem; text-align:center; }
@@ -193,6 +249,11 @@
             .index-card { border-right:none; border-bottom:1px solid var(--border); }
             header,.panel-head { padding-left:1.2rem; padding-right:1.2rem; }
             .news-item { padding:1rem 1.2rem; }
+            .sector-grid { grid-template-columns:repeat(4,1fr); }
+            .sector-row { padding:.8rem 1.2rem; }
+        }
+        @media(max-width:480px){
+            .sector-grid { grid-template-columns:repeat(4,1fr); }
         }
     </style>
 </head>
@@ -219,9 +280,38 @@
 
 <!-- INDICES -->
 <div class="indices-row" id="indices-row">
-    <div class="index-card"><div><div class="index-name">NASDAQ</div><div class="index-price" id="idx-ixic">—</div><div class="index-change" id="idx-ixic-chg">—</div></div></div>
-    <div class="index-card"><div><div class="index-name">S&amp;P 500</div><div class="index-price" id="idx-gspc">—</div><div class="index-change" id="idx-gspc-chg">—</div></div></div>
-    <div class="index-card"><div><div class="index-name">Dow Jones</div><div class="index-price" id="idx-dji">—</div><div class="index-change" id="idx-dji-chg">—</div></div></div>
+    <div class="index-card" onclick="openChart('QQQ','NASDAQ 100')">
+        <div>
+            <div class="index-name">NASDAQ 100</div>
+            <div class="index-price" id="idx-ixic">—</div>
+            <div class="index-change flat" id="idx-ixic-chg">—</div>
+        </div>
+        <svg class="index-bar" id="spark-QQQ"></svg>
+    </div>
+    <div class="index-card" onclick="openChart('SPY','S&amp;P 500')">
+        <div>
+            <div class="index-name">S&amp;P 500</div>
+            <div class="index-price" id="idx-gspc">—</div>
+            <div class="index-change flat" id="idx-gspc-chg">—</div>
+        </div>
+        <svg class="index-bar" id="spark-SPY"></svg>
+    </div>
+    <div class="index-card" onclick="openChart('DIA','Dow Jones')">
+        <div>
+            <div class="index-name">Dow Jones</div>
+            <div class="index-price" id="idx-dji">—</div>
+            <div class="index-change flat" id="idx-dji-chg">—</div>
+        </div>
+        <svg class="index-bar" id="spark-DIA"></svg>
+    </div>
+</div>
+
+<!-- SECTOR HEATMAP -->
+<div class="sector-row">
+    <div class="sector-row-label">Sector Performance</div>
+    <div class="sector-grid" id="sector-grid">
+        <div class="sector-cell" style="background:#1a1a2c"><span class="sector-name">—</span></div>
+    </div>
 </div>
 
 <!-- LAYOUT -->
@@ -255,7 +345,10 @@
 
         <!-- Watchlist -->
         <div class="watchlist">
-            <div class="watchlist-head"><div class="watchlist-title">Watchlist</div></div>
+            <div class="watchlist-head">
+                <div class="watchlist-title">Watchlist</div>
+                <div class="watchlist-hint">click to chart</div>
+            </div>
             <div id="watchlist-body">
                 <div class="loading-state"><p>Loading...</p></div>
             </div>
@@ -264,11 +357,22 @@
     </div>
 </div>
 
+<!-- TRADINGVIEW MODAL -->
+<div class="tv-modal" id="tv-modal" onclick="closeChart(event)">
+    <div class="tv-modal-inner">
+        <div class="tv-modal-head">
+            <div class="tv-modal-title" id="tv-modal-title">Chart</div>
+            <button class="tv-modal-close" onclick="closeChart(null)">✕</button>
+        </div>
+        <div class="tv-modal-body" id="tv-modal-body"></div>
+    </div>
+</div>
+
 <script>
 // ── State ─────────────────────────────────────────────────────────
 let allNews    = [];
 let activeFilter = 'all';
-const REFRESH_MS = 2 * 60 * 1000; // 2 min
+const REFRESH_MS = 2 * 60 * 1000;
 
 // ── Format helpers ─────────────────────────────────────────────────
 const fmtPrice  = n => Number(n).toLocaleString('en-US', { minimumFractionDigits:2, maximumFractionDigits:2 });
@@ -282,6 +386,50 @@ const timeAgo   = iso => {
     if (diff < 86400)return Math.floor(diff/3600) + 'h ago';
     return Math.floor(diff/86400) + 'd ago';
 };
+
+// ── TradingView exchange map ───────────────────────────────────────
+const TV_EXCHANGE = {
+    'QQQ':'NASDAQ','SPY':'AMEX','DIA':'AMEX',
+    'NVDA':'NASDAQ','AAPL':'NASDAQ','TSLA':'NASDAQ','META':'NASDAQ',
+    'MSFT':'NASDAQ','AMZN':'NASDAQ','GOOGL':'NASDAQ','ASML':'NASDAQ',
+    'TSM':'NYSE','PLTR':'NYSE','AMD':'NASDAQ',
+    'XLK':'AMEX','XLF':'AMEX','XLE':'AMEX','XLV':'AMEX',
+    'XLY':'AMEX','XLI':'AMEX','XLC':'AMEX','XLB':'AMEX'
+};
+
+// ── Sparkline SVG helper ───────────────────────────────────────────
+function drawSparkline(svgEl, prices, color) {
+    if (!prices || prices.length < 2) return;
+    const W = 80, H = 36;
+    const min = Math.min(...prices);
+    const max = Math.max(...prices);
+    const range = max - min || 1;
+    const pts = prices.map((p, i) => {
+        const x = (i / (prices.length - 1)) * W;
+        const y = H - ((p - min) / range) * (H - 4) - 2;
+        return `${x.toFixed(1)},${y.toFixed(1)}`;
+    }).join(' ');
+    svgEl.setAttribute('viewBox', `0 0 ${W} ${H}`);
+    svgEl.innerHTML = `
+        <polyline points="${pts}" fill="none" stroke="${color}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.8"/>
+    `;
+}
+
+// ── Load sparklines ────────────────────────────────────────────────
+async function loadSparkline(symbol) {
+    try {
+        const res  = await fetch(`/api/candles/${symbol}`);
+        const data = await res.json();
+        const prices = data.c || [];
+        if (!prices.length) return;
+        const last7 = prices.slice(-14);
+        const el = document.getElementById(`spark-${symbol}`);
+        if (!el) return;
+        const change = prices[prices.length - 1] - prices[prices.length - 2];
+        const color  = change >= 0 ? '#5cba8a' : '#d96060';
+        drawSparkline(el, last7, color);
+    } catch(e) {}
+}
 
 // ── Fetch all data ─────────────────────────────────────────────────
 async function fetchAll() {
@@ -301,45 +449,79 @@ async function fetchAll() {
 const INDEX_MAP = { 'QQQ':'ixic', 'SPY':'gspc', 'DIA':'dji' };
 
 function renderMarket(quotes) {
-    if(!quotes || !quotes.length) return;
+    if (!quotes || !quotes.length) return;
 
-    // Indices
-    for (const q of quotes) {
+    const indices = quotes.filter(q => q.type === 'index');
+    const stocks  = quotes.filter(q => q.type === 'stock');
+    const sectors = quotes.filter(q => q.type === 'sector');
+
+    // ── Indices row ──
+    for (const q of indices) {
         const key = INDEX_MAP[q.symbol];
-        if (key) {
-            const priceEl = document.getElementById(`idx-${key}`);
-            const chgEl   = document.getElementById(`idx-${key}-chg`);
-            if (priceEl) priceEl.textContent = fmtPrice(q.regularMarketPrice);
-            if (chgEl) {
-                chgEl.textContent = fmtChg(q.regularMarketChange) + '  ' + fmtPct(q.regularMarketChangePercent);
-                chgEl.className   = 'index-change ' + chgClass(q.regularMarketChange);
-            }
+        if (!key) continue;
+        const priceEl = document.getElementById(`idx-${key}`);
+        const chgEl   = document.getElementById(`idx-${key}-chg`);
+        if (priceEl) priceEl.textContent = fmtPrice(q.regularMarketPrice);
+        if (chgEl) {
+            chgEl.textContent = fmtChg(q.regularMarketChange) + '  ' + fmtPct(q.regularMarketChangePercent);
+            chgEl.className   = 'index-change ' + chgClass(q.regularMarketChange);
         }
     }
 
-    // Ticker — all non-index stocks
-    const watchQuotes = quotes.filter(q => !q.isIndex);
-    const tickerItems = [...watchQuotes, ...watchQuotes].map(q => `
+    // ── Sector heatmap ──
+    const sectorGrid = document.getElementById('sector-grid');
+    if (sectors.length) {
+        sectorGrid.innerHTML = sectors.map(s => {
+            const pct  = s.regularMarketChangePercent || 0;
+            const abs  = Math.abs(pct);
+            const intensity = Math.min(abs / 3, 1); // saturate at ±3%
+            let bg;
+            if (pct > 0) {
+                const g = Math.round(40 + intensity * 70);
+                const r = Math.round(10 + (1-intensity) * 30);
+                bg = `rgb(${r},${g},${Math.round(10+intensity*20)})`;
+            } else if (pct < 0) {
+                const r = Math.round(60 + intensity * 90);
+                const g = Math.round(10 + (1-intensity) * 20);
+                bg = `rgb(${r},${g},${Math.round(10+intensity*10)})`;
+            } else {
+                bg = '#1a1a2c';
+            }
+            return `<div class="sector-cell" style="background:${bg}" onclick="openChart('${s.symbol}','${s.shortName}')">
+                <div class="sector-name">${s.shortName}</div>
+                <div class="sector-pct">${fmtPct(pct)}</div>
+            </div>`;
+        }).join('');
+    }
+
+    // ── Ticker — all stocks ──
+    const tickerItems = [...stocks, ...stocks].map(q => `
         <span class="ticker-item">
             <span class="ticker-symbol">${q.symbol}</span>
             <span class="ticker-price">${fmtPrice(q.regularMarketPrice)}</span>
             <span class="ticker-change ${chgClass(q.regularMarketChange)}">${fmtPct(q.regularMarketChangePercent)}</span>
         </span>`).join('');
-    document.getElementById('ticker-track').innerHTML = tickerItems || '<span style="font-family:\'Syne Mono\',monospace;font-size:.68rem;color:var(--text-3)">Market data unavailable</span>';
+    document.getElementById('ticker-track').innerHTML = tickerItems
+        || '<span style="font-family:\'Syne Mono\',monospace;font-size:.68rem;color:var(--text-3)">Market data unavailable</span>';
 
-    // Watchlist
+    // ── Watchlist — stocks with sparklines ──
     const wb = document.getElementById('watchlist-body');
-    wb.innerHTML = watchQuotes.map(q => `
-        <div class="watchlist-item">
+    wb.innerHTML = stocks.map(q => `
+        <div class="watchlist-item" onclick="openChart('${q.symbol}','${q.shortName||q.symbol}')">
             <div class="w-left">
                 <div class="w-symbol">${q.symbol}</div>
-                <div class="w-name">${q.shortName||''}</div>
+                <div class="w-name">${q.shortName || ''}</div>
             </div>
+            <svg class="w-spark" id="spark-${q.symbol}"></svg>
             <div class="w-right">
                 <div class="w-price">${fmtPrice(q.regularMarketPrice)}</div>
                 <div class="w-change ${chgClass(q.regularMarketChange)}">${fmtPct(q.regularMarketChangePercent)}</div>
             </div>
         </div>`).join('') || '<div class="loading-state"><p>No data</p></div>';
+
+    // Load sparklines for all symbols (staggered to avoid rate limits)
+    const allSymbols = [...indices.map(q=>q.symbol), ...stocks.map(q=>q.symbol)];
+    allSymbols.forEach((sym, i) => setTimeout(() => loadSparkline(sym), i * 300));
 }
 
 // ── News render ────────────────────────────────────────────────────
@@ -354,12 +536,12 @@ function renderNews() {
     const filtered = activeFilter === 'all' ? allNews : allNews.filter(n => n.sentiment === activeFilter);
 
     // Sentiment gauge
-    const bull = allNews.filter(n=>n.sentiment==='bullish').length;
-    const bear = allNews.filter(n=>n.sentiment==='bearish').length;
+    const bull  = allNews.filter(n=>n.sentiment==='bullish').length;
+    const bear  = allNews.filter(n=>n.sentiment==='bearish').length;
     const total = bull + bear || 1;
-    const score = bull / total; // 0 = all bear, 1 = all bull
+    const score = bull / total;
     document.getElementById('gauge-ptr').style.left = (score * 100) + '%';
-    const labels = ['Extreme Fear','Fear','Neutral','Greed','Extreme Greed'];
+    const labels      = ['Extreme Fear','Fear','Neutral','Greed','Extreme Greed'];
     const labelColors = ['var(--red)','#e07a40','var(--text-2)','#8aba6a','var(--green)'];
     const li = Math.min(4, Math.floor(score * 5));
     document.getElementById('gauge-label').textContent = labels[li];
@@ -383,11 +565,63 @@ function renderNews() {
         </a>`).join('');
 }
 
+// ── TradingView Chart Modal ────────────────────────────────────────
+let tvScriptLoaded = false;
+
+function openChart(symbol, name) {
+    const modal = document.getElementById('tv-modal');
+    const body  = document.getElementById('tv-modal-body');
+    const title = document.getElementById('tv-modal-title');
+
+    const exchange = TV_EXCHANGE[symbol] || 'NASDAQ';
+    const tvSym    = `${exchange}:${symbol}`;
+
+    title.textContent = `${symbol} — ${name}`;
+    body.innerHTML    = `<div id="tv_widget_container" style="width:100%;height:100%"></div>`;
+    modal.classList.add('open');
+    document.body.style.overflow = 'hidden';
+
+    function createWidget() {
+        new TradingView.widget({
+            container_id: 'tv_widget_container',
+            autosize:     true,
+            symbol:       tvSym,
+            interval:     'D',
+            timezone:     'America/New_York',
+            theme:        'dark',
+            style:        '1',
+            locale:       'en',
+            toolbar_bg:   '#0d0d18',
+            hide_side_toolbar: false,
+            allow_symbol_change: true,
+            save_image:   false,
+        });
+    }
+
+    if (!tvScriptLoaded) {
+        const s = document.createElement('script');
+        s.src = 'https://s3.tradingview.com/tv.js';
+        s.onload = () => { tvScriptLoaded = true; createWidget(); };
+        document.head.appendChild(s);
+    } else {
+        createWidget();
+    }
+}
+
+function closeChart(e) {
+    if (e && e.target !== document.getElementById('tv-modal')) return;
+    document.getElementById('tv-modal').classList.remove('open');
+    document.getElementById('tv-modal-body').innerHTML = '';
+    document.body.style.overflow = '';
+}
+
+document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') closeChart(null);
+});
+
 // ── Init & Auto-refresh ────────────────────────────────────────────
 fetchAll();
 setInterval(fetchAll, REFRESH_MS);
-
-// Update time-ago labels every minute
 setInterval(() => { if(allNews.length) renderNews(); }, 60 * 1000);
 </script>
 </body>
