@@ -109,6 +109,8 @@ const FEEDS = [
     { name: 'Reuters Business', url: 'https://feeds.reuters.com/reuters/businessNews' },
     { name: 'MarketWatch',    url: 'https://feeds.content.dowjones.io/public/rss/mw_topstories' },
     { name: 'Seeking Alpha',  url: 'https://seekingalpha.com/market_currents.xml' },
+    { name: 'iProperty MY',  url: 'https://www.iproperty.com.my/news/feed/' },
+    { name: 'The Edge MY',   url: 'https://www.theedgemarkets.com/rss.xml' },
 ];
 
 // Impact tagging — keyword → affected stocks/sectors
@@ -233,6 +235,66 @@ async function fetchNews() {
     return cache.news;
 }
 
+// ── Asian Markets (Yahoo Finance) ────────────────────────────────
+const ASIAN_SYMBOLS = [
+    // Malaysia — indices
+    { symbol: '^KLSE',    name: 'KLCI',          type: 'index', market: 'MY' },
+    // Malaysia — stocks
+    { symbol: '1155.KL',  name: 'Maybank',        type: 'stock', market: 'MY' },
+    { symbol: '1295.KL',  name: 'Public Bank',    type: 'stock', market: 'MY' },
+    { symbol: '1023.KL',  name: 'CIMB',           type: 'stock', market: 'MY' },
+    { symbol: '5347.KL',  name: 'Tenaga',         type: 'stock', market: 'MY' },
+    { symbol: '5225.KL',  name: 'IHH Healthcare', type: 'stock', market: 'MY' },
+    // Malaysia — REITs (property proxy)
+    { symbol: '5227.KL',  name: 'IGB REIT',       type: 'reit',  market: 'MY' },
+    { symbol: '5212.KL',  name: 'Pavilion REIT',  type: 'reit',  market: 'MY' },
+    { symbol: '5106.KL',  name: 'Axis REIT',      type: 'reit',  market: 'MY' },
+    { symbol: '2163.KL',  name: 'YTL Hospitality', type: 'reit', market: 'MY' },
+    // Singapore — index
+    { symbol: '^STI',     name: 'Straits Times Index', type: 'index', market: 'SG' },
+    // Singapore — stocks
+    { symbol: 'D05.SI',   name: 'DBS Bank',       type: 'stock', market: 'SG' },
+    { symbol: 'O39.SI',   name: 'OCBC Bank',      type: 'stock', market: 'SG' },
+    { symbol: 'U11.SI',   name: 'UOB',            type: 'stock', market: 'SG' },
+    { symbol: 'Z74.SI',   name: 'Singtel',        type: 'stock', market: 'SG' },
+    { symbol: 'C38U.SI',  name: 'CapitaLand REIT', type: 'stock', market: 'SG' },
+];
+
+async function fetchYahooQuote(symbol) {
+    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?interval=1d&range=2d`;
+    const raw = await fetch(url);
+    const data = JSON.parse(raw);
+    const result = data?.chart?.result?.[0];
+    if (!result) throw new Error('No result');
+    const meta = result.meta;
+    const price = meta.regularMarketPrice;
+    const prev  = meta.chartPreviousClose || meta.previousClose || price;
+    return {
+        regularMarketPrice:         price,
+        regularMarketChange:        +(price - prev).toFixed(4),
+        regularMarketChangePercent: +((price - prev) / prev * 100).toFixed(4),
+        currency:                   meta.currency || '',
+    };
+}
+
+let asianCache = null, asianLastFetch = 0;
+const ASIAN_TTL = 5 * 60 * 1000;
+
+async function fetchAsianMarkets() {
+    if (asianCache && Date.now() - asianLastFetch < ASIAN_TTL) return asianCache;
+    const results = await Promise.allSettled(
+        ASIAN_SYMBOLS.map(async s => {
+            const q = await fetchYahooQuote(s.symbol);
+            return { symbol: s.symbol, shortName: s.name, type: s.type, market: s.market, ...q };
+        })
+    );
+    const data = results
+        .filter(r => r.status === 'fulfilled' && r.value.regularMarketPrice > 0)
+        .map(r => r.value);
+    if (data.length) { asianCache = data; asianLastFetch = Date.now(); }
+    return asianCache || [];
+}
+
 // ── Yield Curve ──────────────────────────────────────────────────
 let yieldCache = null, yieldLastFetch = 0;
 const YIELD_TTL = 60 * 60 * 1000; // 1 hour
@@ -287,6 +349,10 @@ app.get('/api/news', async (req, res) => {
 
 app.get('/api/yields', async (req, res) => {
     res.json(await fetchYields());
+});
+
+app.get('/api/asian', async (req, res) => {
+    res.json(await fetchAsianMarkets());
 });
 
 app.get('/api/all', async (req, res) => {

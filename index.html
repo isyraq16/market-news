@@ -242,6 +242,25 @@
         .pf-del:hover { color:var(--red); }
         .pf-empty { font-size:.62rem; color:var(--t3); font-family:'IBM Plex Mono',monospace; padding:.4rem 0; }
 
+        /* ─── ASIAN MARKETS ─── */
+        .am-section { border-bottom:1px solid var(--bd); }
+        .am-header { padding:.65rem 1rem .4rem; display:flex; align-items:center; justify-content:space-between; }
+        .am-title { font-size:.72rem; font-weight:600; }
+        .am-index { padding:.5rem 1rem; background:var(--s2); border-bottom:1px solid var(--bd); display:flex; justify-content:space-between; align-items:center; }
+        .am-ix-name { font-family:'IBM Plex Mono',monospace; font-size:.6rem; color:var(--t2); text-transform:uppercase; letter-spacing:.08em; }
+        .am-ix-val  { font-family:'IBM Plex Mono',monospace; font-size:.82rem; font-weight:500; }
+        .am-ix-chg  { font-family:'IBM Plex Mono',monospace; font-size:.6rem; margin-top:.08rem; text-align:right; }
+        .am-row { padding:.55rem 1rem; border-bottom:1px solid var(--bd); display:grid; grid-template-columns:1fr auto; align-items:center; gap:.5rem; cursor:default; }
+        .am-sym  { font-family:'IBM Plex Mono',monospace; font-size:.68rem; font-weight:500; }
+        .am-name { font-size:.58rem; color:var(--t2); margin-top:.06rem; }
+        .am-right { text-align:right; }
+        .am-px   { font-family:'IBM Plex Mono',monospace; font-size:.7rem; }
+        .am-chg  { font-family:'IBM Plex Mono',monospace; font-size:.6rem; margin-top:.06rem; }
+        .am-chg.up{color:var(--green)} .am-chg.dn{color:var(--red)} .am-chg.flat{color:var(--t2)}
+        .am-badge { display:inline-block; font-size:.46rem; padding:.08rem .3rem; border-radius:3px; font-family:'IBM Plex Mono',monospace; letter-spacing:.06em; margin-right:.3rem; vertical-align:middle; }
+        .am-badge-reit { background:rgba(201,165,90,.12); color:var(--gold); border:1px solid rgba(201,165,90,.25); }
+        .am-mkt-closed { font-family:'IBM Plex Mono',monospace; font-size:.5rem; color:var(--t3); }
+
         /* ─── LEARN TIPS ─── */
         .learn-tip { margin:.8rem 1rem; padding:.65rem .8rem; background:var(--s2); border-radius:6px; border-left:3px solid var(--gold); font-size:.7rem; color:var(--t2); line-height:1.5; }
         .learn-tip strong { color:var(--gold); }
@@ -490,6 +509,15 @@
             </div>
         </div>
 
+        <!-- Malaysian Market -->
+        <div class="am-section" id="am-MY"></div>
+
+        <!-- Malaysian Property (REITs) -->
+        <div class="am-section" id="am-MYREIT"></div>
+
+        <!-- Singapore Market -->
+        <div class="am-section" id="am-SG"></div>
+
         <!-- Portfolio Tracker -->
         <div class="pf-wrap sb">
             <div class="sb-title">💼 Portfolio Tracker</div>
@@ -704,9 +732,10 @@ async function loadSpark(sym,W,H){
 // ══════════ FETCH ══════════
 async function fetchAll(){
     try{
-        const [data, yieldsData] = await Promise.all([
+        const [data, yieldsData, asianData] = await Promise.all([
             fetch('/api/all').then(r=>r.json()),
-            fetch('/api/yields').then(r=>r.json()).catch(()=>[])
+            fetch('/api/yields').then(r=>r.json()).catch(()=>[]),
+            fetch('/api/asian').then(r=>r.json()).catch(()=>[])
         ]);
         allQuotes=data.market||[]; allNews=data.news||[];
         if(!allQuotes.length&&retries<6){
@@ -728,6 +757,7 @@ async function fetchAll(){
         renderHeatMap(allQuotes);
         renderYieldCurve(yieldsData);
         renderPortfolio();
+        renderAsianMarkets(asianData);
         // On desktop all panes are visible — init map automatically after data loads
         if (window.innerWidth >= 900) initMap();
     }catch(e){
@@ -1076,6 +1106,63 @@ function removeHolding(i) {
     portfolio.splice(i, 1);
     localStorage.setItem('orca_portfolio', JSON.stringify(portfolio));
     renderPortfolio();
+}
+
+// ══════════ ASIAN MARKETS ══════════
+function fmtAsianPrice(price, currency) {
+    if (!price) return '—';
+    if (price >= 1000) return price.toLocaleString('en', {maximumFractionDigits:2});
+    return price.toFixed(price < 10 ? 3 : 2);
+}
+
+function renderAsianSection(containerId, title, flag, items) {
+    const el = document.getElementById(containerId);
+    if (!el) return;
+    const index = items.find(q => q.type === 'index');
+    const stocks = items.filter(q => q.type !== 'index');
+    const chgClass = v => v > 0 ? 'up' : v < 0 ? 'dn' : 'flat';
+    const sign = v => v > 0 ? '+' : '';
+
+    const indexHtml = index ? `
+        <div class="am-index">
+            <div>
+                <div class="am-ix-name">${flag} ${index.shortName}</div>
+            </div>
+            <div style="text-align:right">
+                <div class="am-ix-val ${chgClass(index.regularMarketChangePercent)}">${fmtAsianPrice(index.regularMarketPrice, index.currency)}</div>
+                <div class="am-ix-chg ${chgClass(index.regularMarketChangePercent)}">${sign(index.regularMarketChange)}${index.regularMarketChange?.toFixed(2)} (${sign(index.regularMarketChangePercent)}${index.regularMarketChangePercent?.toFixed(2)}%)</div>
+            </div>
+        </div>` : '';
+
+    const stocksHtml = stocks.map(q => {
+        const badge = q.type === 'reit' ? '<span class="am-badge am-badge-reit">REIT</span>' : '';
+        return `<div class="am-row">
+            <div>
+                <div class="am-sym">${badge}${q.shortName}</div>
+                <div class="am-name">${q.symbol} · ${q.currency || ''}</div>
+            </div>
+            <div class="am-right">
+                <div class="am-px">${fmtAsianPrice(q.regularMarketPrice, q.currency)}</div>
+                <div class="am-chg ${chgClass(q.regularMarketChangePercent)}">${sign(q.regularMarketChange)}${q.regularMarketChange?.toFixed(3)} (${sign(q.regularMarketChangePercent)}${q.regularMarketChangePercent?.toFixed(2)}%)</div>
+            </div>
+        </div>`;
+    }).join('');
+
+    el.innerHTML = `
+        <div class="am-header"><div class="am-title">${flag} ${title}</div></div>
+        ${indexHtml}
+        ${stocksHtml}`;
+}
+
+function renderAsianMarkets(data) {
+    if (!data || !data.length) return;
+    const my      = data.filter(q => q.market === 'MY' && q.type !== 'reit');
+    const myReits = data.filter(q => q.market === 'MY' && q.type === 'reit');
+    const sg      = data.filter(q => q.market === 'SG');
+
+    if (my.length)      renderAsianSection('am-MY',     'Bursa Malaysia',        '🇲🇾', my);
+    if (myReits.length) renderAsianSection('am-MYREIT', 'Malaysian Property (REITs)', '🏠', myReits);
+    if (sg.length)      renderAsianSection('am-SG',     'Singapore (SGX)',       '🇸🇬', sg);
 }
 
 // ══════════ WORLD MAP ══════════
