@@ -11,11 +11,6 @@
     <meta name="apple-mobile-web-app-title" content="Markets">
     <link rel="apple-touch-icon" href="/icon.svg">
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
-    <!-- amCharts 5 — preloaded in parallel so World tab is instant -->
-    <script src="https://cdn.amcharts.com/lib/5/index.js" defer></script>
-    <script src="https://cdn.amcharts.com/lib/5/map.js" defer></script>
-    <script src="https://cdn.amcharts.com/lib/5/geodata/worldLow.js" defer></script>
-    <script src="https://cdn.amcharts.com/lib/5/themes/Animated.js" defer></script>
     <style>
         :root {
             --bg:    #000;
@@ -663,6 +658,7 @@ async function fetchAll(){
         const ts=new Date(data.updated).toLocaleTimeString('en-MY',{hour:'2-digit',minute:'2-digit'});
         ['ref-btn','ref-btn-2'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent='Updated '+ts+' · tap to refresh';});
         startCountdown();
+        preloadMapScripts();
     }catch(e){
         ['ref-btn','ref-btn-2'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent='Connection error — tap to retry';});
     }
@@ -890,6 +886,24 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape')closeChart(null);});
 // ══════════ WORLD MAP ══════════
 let mapReady = false, mapRoot = null, mapCountryFilter = null;
 
+function preloadMapScripts() {
+    const urls = [
+        'https://cdn.amcharts.com/lib/5/index.js',
+        'https://cdn.amcharts.com/lib/5/map.js',
+        'https://cdn.amcharts.com/lib/5/geodata/worldLow.js',
+        'https://cdn.amcharts.com/lib/5/themes/Animated.js',
+    ];
+    function loadNext(i) {
+        if (i >= urls.length) return;
+        if (document.querySelector(`script[src="${urls[i]}"]`)) { loadNext(i + 1); return; }
+        const s = document.createElement('script');
+        s.src = urls[i];
+        s.onload = () => loadNext(i + 1);
+        document.head.appendChild(s);
+    }
+    loadNext(0);
+}
+
 function switchTab(tab) {
     document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active'));
     document.querySelectorAll('.bnav').forEach(b=>b.classList.remove('active'));
@@ -925,13 +939,29 @@ function countryColor(d) {
 
 function initMap() {
     if (mapReady) { updateMap(); return; }
-    // Scripts are preloaded via <script defer> in <head> — poll until ready
-    if (typeof am5 === 'undefined' || typeof am5map === 'undefined' || typeof am5geodata_worldLow === 'undefined') {
-        document.getElementById('map-div').innerHTML = '<div class="map-loading"><p>Loading map...</p></div>';
-        setTimeout(initMap, 200);
+    if (typeof am5 !== 'undefined' && typeof am5map !== 'undefined' && typeof am5geodata_worldLow !== 'undefined' && typeof am5themes_Animated !== 'undefined') {
+        buildMap();
         return;
     }
-    buildMap();
+    // Not loaded yet — kick off sequential load now
+    const urls = [
+        'https://cdn.amcharts.com/lib/5/index.js',
+        'https://cdn.amcharts.com/lib/5/map.js',
+        'https://cdn.amcharts.com/lib/5/geodata/worldLow.js',
+        'https://cdn.amcharts.com/lib/5/themes/Animated.js',
+    ];
+    document.getElementById('map-div').innerHTML = '<div class="map-loading"><p>Loading map library...</p></div>';
+    function loadNext(i) {
+        if (i >= urls.length) { buildMap(); return; }
+        // Skip if already loaded
+        if (document.querySelector(`script[src="${urls[i]}"]`)) { loadNext(i + 1); return; }
+        const s = document.createElement('script');
+        s.src = urls[i];
+        s.onload = () => loadNext(i + 1);
+        s.onerror = () => { document.getElementById('map-div').innerHTML = '<div class="map-loading"><p>Map failed to load — check connection</p></div>'; };
+        document.head.appendChild(s);
+    }
+    loadNext(0);
 }
 
 function buildMap() {
