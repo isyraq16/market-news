@@ -13,616 +13,698 @@
             --border:   #1a1a2c;
             --border-lt:#222235;
             --gold:     #c9a55a;
-            --gold-lt:  #e2c07e;
             --gold-dim: rgba(201,165,90,0.1);
             --text:     #ede8e0;
             --text-2:   #7a7a90;
-            --text-3:   #333348;
+            --text-3:   #2e2e44;
             --green:    #5cba8a;
             --red:      #d96060;
             --blue:     #5588cc;
-            --purple:   #8866cc;
         }
         * { margin:0; padding:0; box-sizing:border-box; }
-        html { font-size:15px; }
+        html { font-size:15px; scroll-behavior:smooth; }
         body { background:var(--bg); color:var(--text); font-family:'Syne',sans-serif; min-height:100vh; overflow-x:hidden; }
         body::before {
-            content:''; position:fixed; inset:0; pointer-events:none; z-index:9999; opacity:.4;
+            content:''; position:fixed; inset:0; pointer-events:none; z-index:9999; opacity:.35;
             background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
         }
 
-        /* ── TICKER BAR ── */
-        .ticker-bar {
+        /* ─────────── STICKY TOP ─────────── */
+        .sticky-top {
+            position:sticky; top:0; z-index:200;
             background:var(--surface);
             border-bottom:1px solid var(--border);
-            padding:.55rem 0;
-            overflow:hidden;
-            position:relative;
+            box-shadow:0 4px 24px rgba(0,0,0,.5);
         }
-        .ticker-bar::before, .ticker-bar::after {
-            content:''; position:absolute; top:0; bottom:0; width:60px; z-index:2; pointer-events:none;
+
+        /* ── Ticker ── */
+        .ticker-bar {
+            padding:.48rem 0; overflow:hidden; position:relative;
+            border-bottom:1px solid var(--border);
         }
-        .ticker-bar::before { left:0;  background:linear-gradient(to right, var(--surface), transparent); }
-        .ticker-bar::after  { right:0; background:linear-gradient(to left,  var(--surface), transparent); }
-        .ticker-track {
-            display:flex; gap:2.5rem;
-            animation:ticker 40s linear infinite;
-            width:max-content;
+        .ticker-bar::before,.ticker-bar::after {
+            content:''; position:absolute; top:0; bottom:0; width:70px; z-index:2; pointer-events:none;
         }
+        .ticker-bar::before { left:0;  background:linear-gradient(to right,var(--surface),transparent); }
+        .ticker-bar::after  { right:0; background:linear-gradient(to left, var(--surface),transparent); }
+        .ticker-track { display:flex; gap:2.2rem; animation:ticker 45s linear infinite; width:max-content; }
         .ticker-track:hover { animation-play-state:paused; }
         @keyframes ticker { from{transform:translateX(0)} to{transform:translateX(-50%)} }
-        .ticker-item {
-            display:flex; align-items:center; gap:.5rem; white-space:nowrap;
-            font-family:'Syne Mono',monospace; font-size:.68rem; letter-spacing:.05em;
-        }
+        .ticker-item { display:flex; align-items:center; gap:.45rem; white-space:nowrap; font-family:'Syne Mono',monospace; font-size:.67rem; letter-spacing:.04em; }
         .ticker-symbol { color:var(--text-2); }
         .ticker-price  { color:var(--text); }
-        .ticker-change.up   { color:var(--green); }
-        .ticker-change.down { color:var(--red); }
-        .ticker-change.flat { color:var(--text-2); }
+        .t-up   { color:var(--green); }
+        .t-down { color:var(--red); }
+        .t-flat { color:var(--text-2); }
 
-        /* ── HEADER ── */
+        /* ── Indices (part of sticky) ── */
+        .indices-row { display:grid; grid-template-columns:repeat(3,1fr); }
+        .index-card {
+            padding:1rem 1.8rem; border-right:1px solid var(--border);
+            display:flex; justify-content:space-between; align-items:center;
+            cursor:pointer; transition:background .12s; position:relative;
+        }
+        .index-card::after { content:'Click to chart'; position:absolute; bottom:.4rem; right:.8rem; font-family:'Syne Mono',monospace; font-size:.5rem; color:var(--text-3); opacity:0; transition:opacity .15s; letter-spacing:.08em; }
+        .index-card:hover::after { opacity:1; }
+        .index-card:hover { background:rgba(255,255,255,.02); }
+        .index-card:last-child { border-right:none; }
+        .idx-label { font-family:'Syne Mono',monospace; font-size:.6rem; letter-spacing:.15em; color:var(--text-2); text-transform:uppercase; margin-bottom:.25rem; }
+        .idx-price { font-family:'Cormorant Garamond',serif; font-size:1.5rem; font-weight:400; line-height:1; }
+        .idx-chg   { font-family:'Syne Mono',monospace; font-size:.7rem; margin-top:.2rem; }
+        .idx-chg.up { color:var(--green); } .idx-chg.down { color:var(--red); } .idx-chg.flat { color:var(--text-2); }
+        .idx-spark { width:76px; height:34px; flex-shrink:0; }
+
+        /* ─────────── HEADER ─────────── */
         header {
-            padding:1.8rem 3rem 1.5rem;
+            padding:1.5rem 2.5rem 1.3rem;
             border-bottom:1px solid var(--border);
             display:flex; justify-content:space-between; align-items:flex-end;
             position:relative;
         }
-        header::after { content:''; position:absolute; bottom:-1px; left:3rem; width:80px; height:1px; background:var(--gold); }
-        .eyebrow { font-family:'Syne Mono',monospace; font-size:.6rem; letter-spacing:.28em; color:var(--gold); text-transform:uppercase; margin-bottom:.35rem; }
-        h1 { font-family:'Cormorant Garamond',serif; font-size:2rem; font-weight:300; line-height:1; }
+        header::after { content:''; position:absolute; bottom:-1px; left:2.5rem; width:70px; height:1px; background:var(--gold); }
+        .eyebrow { font-family:'Syne Mono',monospace; font-size:.58rem; letter-spacing:.28em; color:var(--gold); text-transform:uppercase; margin-bottom:.3rem; }
+        h1 { font-family:'Cormorant Garamond',serif; font-size:1.9rem; font-weight:300; line-height:1; }
         h1 em { color:var(--gold); font-style:italic; }
         .hdr-right { text-align:right; display:flex; flex-direction:column; gap:.3rem; align-items:flex-end; }
-        .live-dot {
-            display:flex; align-items:center; gap:.4rem;
-            font-family:'Syne Mono',monospace; font-size:.6rem; letter-spacing:.15em; color:var(--green);
-        }
+        .live-dot { display:flex; align-items:center; gap:.4rem; font-family:'Syne Mono',monospace; font-size:.58rem; letter-spacing:.15em; color:var(--green); }
         .live-dot::before { content:''; width:6px; height:6px; border-radius:50%; background:var(--green); animation:blink 1.5s ease infinite; }
         @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
-        .last-update { font-family:'Syne Mono',monospace; font-size:.58rem; color:var(--text-3); letter-spacing:.1em; }
+        .refresh-info { font-family:'Syne Mono',monospace; font-size:.55rem; color:var(--text-3); letter-spacing:.1em; cursor:pointer; padding:.2rem .5rem; border:1px solid transparent; border-radius:2px; transition:all .15s; }
+        .refresh-info:hover { border-color:var(--border-lt); color:var(--text-2); }
 
-        /* ── INDICES ROW ── */
-        .indices-row {
-            display:grid; grid-template-columns:repeat(3,1fr);
-            border-bottom:1px solid var(--border);
-            background:var(--surface);
-        }
-        .index-card {
-            padding:1.2rem 2rem; border-right:1px solid var(--border);
-            display:flex; justify-content:space-between; align-items:center;
-            cursor:pointer; transition:background .12s;
-        }
-        .index-card:hover { background:var(--surface2); }
-        .index-card:last-child { border-right:none; }
-        .index-name { font-family:'Syne Mono',monospace; font-size:.62rem; letter-spacing:.15em; color:var(--text-2); text-transform:uppercase; margin-bottom:.3rem; }
-        .index-price { font-family:'Cormorant Garamond',serif; font-size:1.6rem; font-weight:400; }
-        .index-change { font-family:'Syne Mono',monospace; font-size:.72rem; letter-spacing:.05em; margin-top:.15rem; }
-        .index-change.up   { color:var(--green); }
-        .index-change.down { color:var(--red); }
-        .index-change.flat { color:var(--text-2); }
-        .index-bar { width:80px; height:36px; }
-
-        /* ── SECTOR HEATMAP ── */
-        .sector-row {
-            background:var(--bg);
-            border-bottom:1px solid var(--border);
-            padding:1rem 2rem;
-        }
-        .sector-row-label {
-            font-family:'Syne Mono',monospace; font-size:.58rem; letter-spacing:.22em; color:var(--text-3);
-            text-transform:uppercase; margin-bottom:.7rem;
-        }
-        .sector-grid {
-            display:grid; grid-template-columns:repeat(8,1fr); gap:.4rem;
-        }
+        /* ─────────── SECTOR HEATMAP ─────────── */
+        .sector-section { padding:.8rem 2.5rem 1rem; border-bottom:1px solid var(--border); background:var(--bg); }
+        .section-label { font-family:'Syne Mono',monospace; font-size:.55rem; letter-spacing:.22em; color:var(--text-3); text-transform:uppercase; margin-bottom:.6rem; }
+        .sector-grid { display:grid; grid-template-columns:repeat(8,1fr); gap:.35rem; }
         .sector-cell {
-            padding:.6rem .4rem; border-radius:2px; text-align:center;
-            cursor:pointer; transition:filter .12s, transform .1s;
-            position:relative; overflow:hidden;
+            padding:.55rem .3rem .45rem; border-radius:3px; text-align:center;
+            cursor:pointer; transition:filter .12s, transform .1s, box-shadow .12s;
+            border:1px solid transparent;
         }
-        .sector-cell:hover { filter:brightness(1.2); transform:translateY(-1px); }
-        .sector-name { font-family:'Syne Mono',monospace; font-size:.55rem; letter-spacing:.06em; color:#fff; opacity:.75; line-height:1.3; }
-        .sector-pct  { font-family:'Syne Mono',monospace; font-size:.72rem; font-weight:600; color:#fff; margin-top:.2rem; }
+        .sector-cell:hover { filter:brightness(1.25); transform:translateY(-2px); box-shadow:0 4px 16px rgba(0,0,0,.4); border-color:rgba(255,255,255,.1); }
+        .sc-name   { font-family:'Syne Mono',monospace; font-size:.5rem; letter-spacing:.04em; color:#ffffffaa; line-height:1.2; }
+        .sc-symbol { font-family:'Syne Mono',monospace; font-size:.48rem; color:#ffffff55; margin-top:.1rem; }
+        .sc-pct    { font-family:'Syne Mono',monospace; font-size:.7rem; font-weight:700; color:#fff; margin-top:.15rem; }
 
-        /* ── MAIN LAYOUT ── */
-        .layout { display:grid; grid-template-columns:1fr 320px; gap:0; min-height:calc(100vh - 280px); }
+        /* ─────────── MAIN LAYOUT ─────────── */
+        .layout { display:grid; grid-template-columns:1fr 308px; min-height:calc(100vh - 320px); }
 
-        /* ── NEWS FEED ── */
+        /* ─────────── NEWS PANEL ─────────── */
         .news-panel { border-right:1px solid var(--border); }
-        .panel-head {
-            padding:1rem 2rem; border-bottom:1px solid var(--border);
+        .news-toolbar {
+            padding:.75rem 1.8rem; border-bottom:1px solid var(--border);
             background:var(--surface2);
-            display:flex; justify-content:space-between; align-items:center;
+            display:flex; justify-content:space-between; align-items:center; gap:1rem; flex-wrap:wrap;
         }
-        .panel-title { font-family:'Cormorant Garamond',serif; font-size:1.1rem; font-weight:400; letter-spacing:.03em; display:flex; align-items:center; gap:.6rem; }
-        .panel-title .icon { font-size:.9rem; opacity:.5; }
-        .filter-bar { display:flex; gap:.5rem; }
+        .filter-group { display:flex; gap:.4rem; align-items:center; }
         .filter-btn {
             background:transparent; border:1px solid var(--border-lt); color:var(--text-2);
-            padding:.28rem .7rem; font-family:'Syne Mono',monospace; font-size:.58rem; letter-spacing:.1em;
-            text-transform:uppercase; cursor:pointer; transition:all .15s; border-radius:1px;
+            padding:.25rem .65rem; font-family:'Syne Mono',monospace; font-size:.55rem; letter-spacing:.08em;
+            text-transform:uppercase; cursor:pointer; transition:all .15s; border-radius:2px;
         }
         .filter-btn.active { border-color:var(--gold); color:var(--gold); background:var(--gold-dim); }
-        .filter-btn:hover  { border-color:var(--text-2); color:var(--text); }
+        .filter-btn:hover:not(.active) { border-color:var(--text-2); color:var(--text); }
+        .filter-count { font-size:.48rem; opacity:.6; margin-left:.2rem; }
 
-        .news-list { padding:0; }
+        .search-wrap { position:relative; }
+        .search-wrap::before { content:'⌕'; position:absolute; left:.55rem; top:50%; transform:translateY(-50%); color:var(--text-3); font-size:.8rem; pointer-events:none; }
+        #search-input {
+            background:var(--bg); border:1px solid var(--border-lt); color:var(--text);
+            padding:.3rem .6rem .3rem 1.6rem; width:180px; font-family:'Syne',sans-serif; font-size:.72rem;
+            border-radius:2px; outline:none; transition:border-color .15s;
+        }
+        #search-input:focus { border-color:var(--gold); }
+        #search-input::placeholder { color:var(--text-3); }
+
+        .news-list {}
         .news-item {
-            padding:1.2rem 2rem; border-bottom:1px solid var(--border);
+            padding:1.1rem 1.8rem; border-bottom:1px solid var(--border);
             cursor:pointer; transition:background .12s; text-decoration:none; display:block; color:inherit;
+            border-left:3px solid transparent;
         }
-        .news-item:hover { background:var(--surface2); }
-        .news-meta { display:flex; align-items:center; gap:.6rem; margin-bottom:.5rem; flex-wrap:wrap; }
-        .news-source { font-family:'Syne Mono',monospace; font-size:.58rem; letter-spacing:.15em; color:var(--text-3); text-transform:uppercase; }
-        .news-time   { font-family:'Syne Mono',monospace; font-size:.58rem; color:var(--text-3); }
-        .sentiment-badge {
-            display:inline-flex; align-items:center; gap:.3rem;
-            padding:.15rem .5rem; border-radius:1px; font-family:'Syne Mono',monospace;
-            font-size:.55rem; letter-spacing:.12em; text-transform:uppercase;
-        }
-        .sentiment-badge::before { content:''; width:5px; height:5px; border-radius:50%; }
-        .sentiment-badge.bullish { background:rgba(92,186,138,.1); color:var(--green); border:1px solid rgba(92,186,138,.25); }
-        .sentiment-badge.bullish::before { background:var(--green); }
-        .sentiment-badge.bearish { background:rgba(217,96,96,.1); color:var(--red); border:1px solid rgba(217,96,96,.25); }
-        .sentiment-badge.bearish::before { background:var(--red); }
-        .sentiment-badge.neutral { background:rgba(170,170,170,.08); color:var(--text-2); border:1px solid rgba(170,170,170,.15); }
-        .sentiment-badge.neutral::before { background:var(--text-2); }
+        .news-item:hover { background:rgba(255,255,255,.015); }
+        .news-item.bullish-border { border-left-color:rgba(92,186,138,.35); }
+        .news-item.bearish-border { border-left-color:rgba(217,96,96,.35); }
 
-        .news-title { font-size:.92rem; line-height:1.45; margin-bottom:.6rem; font-weight:500; }
-        .news-summary { font-size:.78rem; color:var(--text-2); line-height:1.5; margin-bottom:.7rem; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
-        .impact-tags { display:flex; gap:.4rem; flex-wrap:wrap; }
+        .news-meta { display:flex; align-items:center; gap:.5rem; margin-bottom:.45rem; flex-wrap:wrap; }
+        .news-source { font-family:'Syne Mono',monospace; font-size:.55rem; letter-spacing:.12em; color:var(--text-3); text-transform:uppercase; }
+        .news-time   { font-family:'Syne Mono',monospace; font-size:.55rem; color:var(--text-3); }
+        .s-badge {
+            display:inline-flex; align-items:center; gap:.28rem;
+            padding:.12rem .45rem; border-radius:2px; font-family:'Syne Mono',monospace;
+            font-size:.52rem; letter-spacing:.1em; text-transform:uppercase;
+        }
+        .s-badge::before { content:''; width:4px; height:4px; border-radius:50%; }
+        .s-badge.bullish { background:rgba(92,186,138,.08); color:var(--green); border:1px solid rgba(92,186,138,.2); }
+        .s-badge.bullish::before { background:var(--green); }
+        .s-badge.bearish { background:rgba(217,96,96,.08); color:var(--red); border:1px solid rgba(217,96,96,.2); }
+        .s-badge.bearish::before { background:var(--red); }
+        .s-badge.neutral { background:rgba(170,170,170,.06); color:var(--text-2); border:1px solid rgba(170,170,170,.12); }
+        .s-badge.neutral::before { background:var(--text-2); }
+
+        .news-title   { font-size:.9rem; line-height:1.5; margin-bottom:.5rem; font-weight:500; }
+        .news-summary { font-size:.76rem; color:var(--text-2); line-height:1.55; margin-bottom:.6rem; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+        .impact-tags  { display:flex; gap:.35rem; flex-wrap:wrap; }
         .impact-tag {
-            display:inline-block; padding:.15rem .5rem; border-radius:1px;
-            font-family:'Syne Mono',monospace; font-size:.55rem; letter-spacing:.1em; text-transform:uppercase;
-            border:1px solid; opacity:.85;
+            display:inline-block; padding:.12rem .45rem; border-radius:2px;
+            font-family:'Syne Mono',monospace; font-size:.52rem; letter-spacing:.08em; text-transform:uppercase; border:1px solid;
         }
 
-        /* ── SIDEBAR ── */
-        .sidebar { background:var(--surface); }
-        .watchlist { }
-        .watchlist-head {
-            padding:1rem 1.5rem; border-bottom:1px solid var(--border); background:var(--surface2);
-            display:flex; justify-content:space-between; align-items:center;
+        /* ─────────── SIDEBAR ─────────── */
+        .sidebar { background:var(--surface); display:flex; flex-direction:column; }
+
+        /* Sentiment gauge */
+        .sentiment-box { padding:1.1rem 1.4rem; border-bottom:1px solid var(--border); }
+        .sidebar-label { font-family:'Syne Mono',monospace; font-size:.55rem; letter-spacing:.2em; color:var(--text-2); text-transform:uppercase; margin-bottom:.75rem; display:flex; justify-content:space-between; align-items:center; }
+        .gauge-bar { height:5px; border-radius:3px; background:linear-gradient(to right,var(--red),var(--gold),var(--green)); position:relative; margin-bottom:.55rem; }
+        .gauge-pointer { position:absolute; top:-5px; width:14px; height:14px; border-radius:50%; background:var(--text); border:2px solid var(--bg); transform:translateX(-50%); transition:left .5s ease; }
+        .gauge-labels { display:flex; justify-content:space-between; font-family:'Syne Mono',monospace; font-size:.52rem; color:var(--text-3); }
+        .gauge-value { text-align:center; font-family:'Cormorant Garamond',serif; font-size:1.25rem; font-weight:400; margin-top:.5rem; }
+
+        /* Top Movers */
+        .movers-box { padding:1rem 1.4rem; border-bottom:1px solid var(--border); }
+        .movers-grid { display:grid; grid-template-columns:1fr 1fr; gap:.35rem; margin-top:.5rem; }
+        .mover-item {
+            padding:.5rem .7rem; border-radius:3px; cursor:pointer; transition:filter .12s;
+            border:1px solid transparent;
         }
-        .watchlist-title { font-family:'Cormorant Garamond',serif; font-size:1.1rem; font-weight:400; }
-        .watchlist-hint { font-family:'Syne Mono',monospace; font-size:.55rem; color:var(--text-3); letter-spacing:.08em; }
+        .mover-item:hover { filter:brightness(1.2); }
+        .mover-item.up   { background:rgba(92,186,138,.07); border-color:rgba(92,186,138,.15); }
+        .mover-item.down { background:rgba(217,96,96,.07); border-color:rgba(217,96,96,.15); }
+        .mv-sym  { font-family:'Syne Mono',monospace; font-size:.7rem; letter-spacing:.06em; color:var(--gold); }
+        .mv-name { font-family:'Syne',sans-serif; font-size:.62rem; color:var(--text-2); margin-top:.08rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .mv-pct  { font-family:'Syne Mono',monospace; font-size:.72rem; font-weight:700; margin-top:.2rem; }
+        .mv-pct.up { color:var(--green); } .mv-pct.down { color:var(--red); }
+
+        /* Watchlist */
+        .watchlist-head { padding:.9rem 1.4rem; border-bottom:1px solid var(--border); background:var(--surface2); display:flex; justify-content:space-between; align-items:center; }
+        .watchlist-title { font-family:'Cormorant Garamond',serif; font-size:1.05rem; font-weight:400; }
+        .watchlist-hint { font-family:'Syne Mono',monospace; font-size:.5rem; color:var(--text-3); letter-spacing:.08em; }
         .watchlist-item {
-            padding:.85rem 1.5rem; border-bottom:1px solid var(--border);
-            display:grid; grid-template-columns:1fr auto; align-items:center; gap:.5rem;
+            padding:.75rem 1.4rem; border-bottom:1px solid var(--border);
+            display:grid; grid-template-columns:1fr 60px auto; align-items:center; gap:.5rem;
             transition:background .12s; cursor:pointer;
         }
-        .watchlist-item:hover { background:var(--surface2); }
-        .w-left .w-symbol { font-family:'Syne Mono',monospace; font-size:.78rem; letter-spacing:.08em; color:var(--gold); }
-        .w-left .w-name   { font-size:.68rem; color:var(--text-2); margin-top:.1rem; }
+        .watchlist-item:hover { background:rgba(255,255,255,.02); }
+        .w-sym  { font-family:'Syne Mono',monospace; font-size:.76rem; letter-spacing:.06em; color:var(--gold); }
+        .w-name { font-size:.65rem; color:var(--text-2); margin-top:.08rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:90px; }
+        .w-spark { width:60px; height:26px; display:block; }
         .w-right { text-align:right; }
-        .w-price  { font-family:'Syne Mono',monospace; font-size:.8rem; }
-        .w-change { font-family:'Syne Mono',monospace; font-size:.68rem; margin-top:.1rem; }
-        .w-change.up   { color:var(--green); }
-        .w-change.down { color:var(--red); }
-        .w-change.flat { color:var(--text-2); }
-        .w-spark { width:64px; height:28px; display:block; }
+        .w-price { font-family:'Syne Mono',monospace; font-size:.76rem; }
+        .w-chg   { font-family:'Syne Mono',monospace; font-size:.65rem; margin-top:.08rem; }
+        .w-chg.up { color:var(--green); } .w-chg.down { color:var(--red); } .w-chg.flat { color:var(--text-2); }
 
-        /* ── SENTIMENT GAUGE ── */
-        .sentiment-box { padding:1.2rem 1.5rem; border-bottom:1px solid var(--border); }
-        .sentiment-box .s-title { font-family:'Syne Mono',monospace; font-size:.58rem; letter-spacing:.2em; color:var(--text-2); text-transform:uppercase; margin-bottom:.8rem; }
-        .gauge-bar { height:6px; border-radius:3px; background:linear-gradient(to right, var(--red), var(--gold), var(--green)); position:relative; margin-bottom:.6rem; }
-        .gauge-pointer { position:absolute; top:-4px; width:14px; height:14px; border-radius:50%; background:var(--text); border:2px solid var(--bg); transform:translateX(-50%); transition:left .5s ease; }
-        .gauge-labels { display:flex; justify-content:space-between; font-family:'Syne Mono',monospace; font-size:.55rem; color:var(--text-3); letter-spacing:.08em; }
-        .gauge-value { text-align:center; font-family:'Cormorant Garamond',serif; font-size:1.3rem; font-weight:400; }
+        /* ─────────── SKELETON LOADER ─────────── */
+        .skeleton { background:var(--border); border-radius:2px; animation:skel 1.2s ease infinite; }
+        @keyframes skel { 0%,100%{opacity:.3} 50%{opacity:.7} }
+        .skel-news { padding:1.2rem 1.8rem; border-bottom:1px solid var(--border); }
+        .skel-row  { height:10px; margin-bottom:.5rem; border-radius:2px; }
 
-        /* ── TRADINGVIEW MODAL ── */
+        /* ─────────── TRADINGVIEW MODAL ─────────── */
         .tv-modal {
-            display:none; position:fixed; inset:0; z-index:10000;
-            background:rgba(6,6,15,.92); backdrop-filter:blur(6px);
-            align-items:center; justify-content:center;
+            display:none; position:fixed; inset:0; z-index:1000;
+            background:rgba(6,6,15,.92); backdrop-filter:blur(8px);
+            align-items:center; justify-content:center; padding:1rem;
         }
         .tv-modal.open { display:flex; }
-        .tv-modal-inner {
+        .tv-inner {
             background:var(--surface); border:1px solid var(--border-lt);
-            border-radius:4px; width:min(1100px,96vw); height:min(680px,90vh);
+            border-radius:4px; width:min(1140px,100%); height:min(680px,90vh);
             display:flex; flex-direction:column; overflow:hidden;
-            box-shadow:0 24px 80px rgba(0,0,0,.6);
+            box-shadow:0 32px 100px rgba(0,0,0,.7);
         }
-        .tv-modal-head {
-            padding:.9rem 1.5rem; border-bottom:1px solid var(--border);
+        .tv-head {
+            padding:.8rem 1.4rem; border-bottom:1px solid var(--border);
             display:flex; justify-content:space-between; align-items:center;
-            background:var(--surface2);
+            background:var(--surface2); flex-shrink:0;
         }
-        .tv-modal-title { font-family:'Cormorant Garamond',serif; font-size:1.15rem; font-weight:400; }
-        .tv-modal-close {
+        .tv-head-left { display:flex; align-items:center; gap:1rem; }
+        .tv-title { font-family:'Cormorant Garamond',serif; font-size:1.1rem; font-weight:400; }
+        .tv-price-info { font-family:'Syne Mono',monospace; font-size:.65rem; color:var(--text-2); }
+        .tv-close {
             background:none; border:1px solid var(--border-lt); color:var(--text-2);
-            width:28px; height:28px; border-radius:2px; cursor:pointer; font-size:.85rem;
+            width:28px; height:28px; border-radius:2px; cursor:pointer; font-size:.8rem;
             display:flex; align-items:center; justify-content:center; transition:all .12s;
         }
-        .tv-modal-close:hover { border-color:var(--red); color:var(--red); }
-        .tv-modal-body { flex:1; overflow:hidden; }
+        .tv-close:hover { border-color:var(--red); color:var(--red); }
+        .tv-body { flex:1; overflow:hidden; min-height:0; }
 
-        /* ── LOADING ── */
-        .loading-state { padding:3rem 2rem; text-align:center; }
-        .loading-state p { font-family:'Syne Mono',monospace; font-size:.65rem; letter-spacing:.2em; color:var(--text-3); animation:pulse 1.2s ease infinite; }
-        @keyframes pulse { 0%,100%{opacity:.2} 50%{opacity:.7} }
+        /* ─────────── EMPTY / ERROR ─────────── */
+        .empty-state { padding:3rem 2rem; text-align:center; }
+        .empty-state p { font-family:'Syne Mono',monospace; font-size:.62rem; letter-spacing:.18em; color:var(--text-3); }
 
-        /* ── RESPONSIVE ── */
-        @media(max-width:900px){
+        /* ─────────── RESPONSIVE ─────────── */
+        @media(max-width:960px){
             .layout { grid-template-columns:1fr; }
             .sidebar { border-top:1px solid var(--border); }
-            .indices-row { grid-template-columns:1fr; }
-            .index-card { border-right:none; border-bottom:1px solid var(--border); }
-            header,.panel-head { padding-left:1.2rem; padding-right:1.2rem; }
-            .news-item { padding:1rem 1.2rem; }
-            .sector-grid { grid-template-columns:repeat(4,1fr); }
-            .sector-row { padding:.8rem 1.2rem; }
+            .movers-grid { grid-template-columns:repeat(4,1fr); }
+            header { padding:1.2rem 1.4rem 1rem; }
+            .sector-section { padding:.7rem 1.4rem .9rem; }
         }
-        @media(max-width:480px){
+        @media(max-width:640px){
+            .indices-row { grid-template-columns:1fr; }
+            .index-card  { border-right:none; border-bottom:1px solid var(--border); padding:.8rem 1.2rem; }
             .sector-grid { grid-template-columns:repeat(4,1fr); }
+            .movers-grid { grid-template-columns:repeat(2,1fr); }
+            .news-toolbar { gap:.5rem; }
+            #search-input { width:140px; }
         }
     </style>
 </head>
 <body>
 
-<!-- TICKER -->
-<div class="ticker-bar">
-    <div class="ticker-track" id="ticker-track">
-        <span style="font-family:'Syne Mono',monospace;font-size:.68rem;color:var(--text-3);letter-spacing:.1em">Loading market data...</span>
+<!-- ══ STICKY TOP (ticker + indices) ══ -->
+<div class="sticky-top">
+    <div class="ticker-bar">
+        <div class="ticker-track" id="ticker-track">
+            <span style="font-family:'Syne Mono',monospace;font-size:.67rem;color:var(--text-3);letter-spacing:.1em;padding:0 2rem">Connecting to market data...</span>
+        </div>
+    </div>
+    <div class="indices-row">
+        <div class="index-card" onclick="openChart('QQQ','NASDAQ 100')">
+            <div>
+                <div class="idx-label">NASDAQ 100</div>
+                <div class="idx-price" id="idx-ixic">—</div>
+                <div class="idx-chg flat" id="idx-ixic-chg">—</div>
+            </div>
+            <svg class="idx-spark" id="spark-QQQ"></svg>
+        </div>
+        <div class="index-card" onclick="openChart('SPY','S&amp;P 500')">
+            <div>
+                <div class="idx-label">S&amp;P 500</div>
+                <div class="idx-price" id="idx-gspc">—</div>
+                <div class="idx-chg flat" id="idx-gspc-chg">—</div>
+            </div>
+            <svg class="idx-spark" id="spark-SPY"></svg>
+        </div>
+        <div class="index-card" onclick="openChart('DIA','Dow Jones')">
+            <div>
+                <div class="idx-label">DOW JONES</div>
+                <div class="idx-price" id="idx-dji">—</div>
+                <div class="idx-chg flat" id="idx-dji-chg">—</div>
+            </div>
+            <svg class="idx-spark" id="spark-DIA"></svg>
+        </div>
     </div>
 </div>
 
-<!-- HEADER -->
+<!-- ══ HEADER ══ -->
 <header>
     <div>
-        <div class="eyebrow">OrcaHS9 — Market Intelligence</div>
+        <div class="eyebrow">OrcaHS9 · Market Intelligence</div>
         <h1>News &amp; <em>Market Impact</em></h1>
     </div>
     <div class="hdr-right">
         <div class="live-dot">Live Feed</div>
-        <div class="last-update" id="last-update">Fetching data...</div>
+        <div class="refresh-info" id="refresh-info" onclick="forceRefresh()" title="Click to refresh now">Fetching...</div>
     </div>
 </header>
 
-<!-- INDICES -->
-<div class="indices-row" id="indices-row">
-    <div class="index-card" onclick="openChart('QQQ','NASDAQ 100')">
-        <div>
-            <div class="index-name">NASDAQ 100</div>
-            <div class="index-price" id="idx-ixic">—</div>
-            <div class="index-change flat" id="idx-ixic-chg">—</div>
-        </div>
-        <svg class="index-bar" id="spark-QQQ"></svg>
-    </div>
-    <div class="index-card" onclick="openChart('SPY','S&amp;P 500')">
-        <div>
-            <div class="index-name">S&amp;P 500</div>
-            <div class="index-price" id="idx-gspc">—</div>
-            <div class="index-change flat" id="idx-gspc-chg">—</div>
-        </div>
-        <svg class="index-bar" id="spark-SPY"></svg>
-    </div>
-    <div class="index-card" onclick="openChart('DIA','Dow Jones')">
-        <div>
-            <div class="index-name">Dow Jones</div>
-            <div class="index-price" id="idx-dji">—</div>
-            <div class="index-change flat" id="idx-dji-chg">—</div>
-        </div>
-        <svg class="index-bar" id="spark-DIA"></svg>
-    </div>
-</div>
-
-<!-- SECTOR HEATMAP -->
-<div class="sector-row">
-    <div class="sector-row-label">Sector Performance</div>
+<!-- ══ SECTOR HEATMAP ══ -->
+<div class="sector-section">
+    <div class="section-label">Sector Performance · click to chart</div>
     <div class="sector-grid" id="sector-grid">
-        <div class="sector-cell" style="background:#1a1a2c"><span class="sector-name">—</span></div>
+        <div class="skeleton" style="height:52px;border-radius:3px"></div>
+        <div class="skeleton" style="height:52px;border-radius:3px"></div>
+        <div class="skeleton" style="height:52px;border-radius:3px"></div>
+        <div class="skeleton" style="height:52px;border-radius:3px"></div>
+        <div class="skeleton" style="height:52px;border-radius:3px"></div>
+        <div class="skeleton" style="height:52px;border-radius:3px"></div>
+        <div class="skeleton" style="height:52px;border-radius:3px"></div>
+        <div class="skeleton" style="height:52px;border-radius:3px"></div>
     </div>
 </div>
 
-<!-- LAYOUT -->
+<!-- ══ MAIN LAYOUT ══ -->
 <div class="layout">
 
     <!-- NEWS -->
     <div class="news-panel">
-        <div class="panel-head">
-            <div class="panel-title"><span class="icon">◈</span> Market News</div>
-            <div class="filter-bar">
-                <button class="filter-btn active" onclick="setFilter('all',this)">All</button>
-                <button class="filter-btn" onclick="setFilter('bullish',this)">Bullish</button>
-                <button class="filter-btn" onclick="setFilter('bearish',this)">Bearish</button>
+        <div class="news-toolbar">
+            <div class="filter-group">
+                <button class="filter-btn active" data-f="all"     onclick="setFilter('all',this)">All <span class="filter-count" id="cnt-all"></span></button>
+                <button class="filter-btn"         data-f="bullish" onclick="setFilter('bullish',this)">📈 Bullish <span class="filter-count" id="cnt-bullish"></span></button>
+                <button class="filter-btn"         data-f="bearish" onclick="setFilter('bearish',this)">📉 Bearish <span class="filter-count" id="cnt-bearish"></span></button>
+            </div>
+            <div class="search-wrap">
+                <input id="search-input" type="text" placeholder="Search news..." oninput="renderNews()" autocomplete="off">
             </div>
         </div>
-        <div class="news-list" id="news-list">
-            <div class="loading-state"><p>Fetching latest market news...</p></div>
+        <div id="news-list">
+            <div class="skel-news"><div class="skeleton skel-row" style="width:30%"></div><div class="skeleton skel-row" style="width:80%"></div><div class="skeleton skel-row" style="width:60%"></div></div>
+            <div class="skel-news"><div class="skeleton skel-row" style="width:25%"></div><div class="skeleton skel-row" style="width:90%"></div><div class="skeleton skel-row" style="width:50%"></div></div>
+            <div class="skel-news"><div class="skeleton skel-row" style="width:35%"></div><div class="skeleton skel-row" style="width:75%"></div><div class="skeleton skel-row" style="width:65%"></div></div>
         </div>
     </div>
 
     <!-- SIDEBAR -->
     <div class="sidebar">
 
-        <!-- Sentiment Gauge -->
+        <!-- Sentiment gauge -->
         <div class="sentiment-box">
-            <div class="s-title">Market Sentiment</div>
+            <div class="sidebar-label">Market Sentiment</div>
             <div class="gauge-bar"><div class="gauge-pointer" id="gauge-ptr" style="left:50%"></div></div>
             <div class="gauge-labels"><span>Fear</span><span>Neutral</span><span>Greed</span></div>
-            <div class="gauge-value" id="gauge-label" style="margin-top:.6rem;color:var(--text-2)">—</div>
+            <div class="gauge-value" id="gauge-label" style="color:var(--text-2)">—</div>
+        </div>
+
+        <!-- Top Movers -->
+        <div class="movers-box">
+            <div class="sidebar-label">Top Movers <span style="font-size:.48rem;color:var(--text-3)">TODAY</span></div>
+            <div class="movers-grid" id="movers-grid">
+                <div class="skeleton" style="height:60px;border-radius:3px"></div>
+                <div class="skeleton" style="height:60px;border-radius:3px"></div>
+                <div class="skeleton" style="height:60px;border-radius:3px"></div>
+                <div class="skeleton" style="height:60px;border-radius:3px"></div>
+            </div>
         </div>
 
         <!-- Watchlist -->
-        <div class="watchlist">
+        <div>
             <div class="watchlist-head">
                 <div class="watchlist-title">Watchlist</div>
-                <div class="watchlist-hint">click to chart</div>
+                <div class="watchlist-hint">tap to open chart</div>
             </div>
             <div id="watchlist-body">
-                <div class="loading-state"><p>Loading...</p></div>
+                <div class="skel-news"><div class="skeleton skel-row" style="width:50%"></div><div class="skeleton skel-row" style="width:80%"></div></div>
+                <div class="skel-news"><div class="skeleton skel-row" style="width:50%"></div><div class="skeleton skel-row" style="width:80%"></div></div>
             </div>
         </div>
 
     </div>
 </div>
 
-<!-- TRADINGVIEW MODAL -->
+<!-- ══ TRADINGVIEW MODAL ══ -->
 <div class="tv-modal" id="tv-modal" onclick="closeChart(event)">
-    <div class="tv-modal-inner">
-        <div class="tv-modal-head">
-            <div class="tv-modal-title" id="tv-modal-title">Chart</div>
-            <button class="tv-modal-close" onclick="closeChart(null)">✕</button>
+    <div class="tv-inner">
+        <div class="tv-head">
+            <div class="tv-head-left">
+                <div class="tv-title" id="tv-title">Chart</div>
+                <div class="tv-price-info" id="tv-price-info"></div>
+            </div>
+            <button class="tv-close" onclick="closeChart(null)">✕</button>
         </div>
-        <div class="tv-modal-body" id="tv-modal-body"></div>
+        <div class="tv-body" id="tv-body"></div>
     </div>
 </div>
 
 <script>
-// ── State ─────────────────────────────────────────────────────────
-let allNews    = [];
+// ═══════════════════════════════════════════════════════════
+//  State
+// ═══════════════════════════════════════════════════════════
+let allNews      = [];
+let allQuotes    = [];
 let activeFilter = 'all';
+let countdown    = 120;
+let countdownTmr = null;
 const REFRESH_MS = 2 * 60 * 1000;
 
-// ── Format helpers ─────────────────────────────────────────────────
-const fmtPrice  = n => Number(n).toLocaleString('en-US', { minimumFractionDigits:2, maximumFractionDigits:2 });
-const fmtChg    = n => (n >= 0 ? '+' : '') + Number(n).toFixed(2);
-const fmtPct    = n => (n >= 0 ? '+' : '') + Number(n).toFixed(2) + '%';
-const chgClass  = n => n > 0 ? 'up' : n < 0 ? 'down' : 'flat';
-const timeAgo   = iso => {
-    const diff = (Date.now() - new Date(iso)) / 1000;
-    if (diff < 60)   return Math.floor(diff) + 's ago';
-    if (diff < 3600) return Math.floor(diff/60) + 'm ago';
-    if (diff < 86400)return Math.floor(diff/3600) + 'h ago';
-    return Math.floor(diff/86400) + 'd ago';
+// ═══════════════════════════════════════════════════════════
+//  Helpers
+// ═══════════════════════════════════════════════════════════
+const fmtP  = n => Number(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+const fmtC  = n => (n>=0?'+':'')+Number(n).toFixed(2);
+const fmtPct= n => (n>=0?'+':'')+Number(n).toFixed(2)+'%';
+const cls   = n => n>0?'up':n<0?'down':'flat';
+const timeAgo = iso => {
+    const d = (Date.now()-new Date(iso))/1000;
+    if(d<60)   return Math.floor(d)+'s ago';
+    if(d<3600) return Math.floor(d/60)+'m ago';
+    if(d<86400)return Math.floor(d/3600)+'h ago';
+    return Math.floor(d/86400)+'d ago';
 };
 
-// ── TradingView exchange map ───────────────────────────────────────
-const TV_EXCHANGE = {
-    'QQQ':'NASDAQ','SPY':'AMEX','DIA':'AMEX',
-    'NVDA':'NASDAQ','AAPL':'NASDAQ','TSLA':'NASDAQ','META':'NASDAQ',
-    'MSFT':'NASDAQ','AMZN':'NASDAQ','GOOGL':'NASDAQ','ASML':'NASDAQ',
-    'TSM':'NYSE','PLTR':'NYSE','AMD':'NASDAQ',
-    'XLK':'AMEX','XLF':'AMEX','XLE':'AMEX','XLV':'AMEX',
-    'XLY':'AMEX','XLI':'AMEX','XLC':'AMEX','XLB':'AMEX'
+// ═══════════════════════════════════════════════════════════
+//  TradingView symbol map
+// ═══════════════════════════════════════════════════════════
+const TV_EX = {
+    QQQ:'NASDAQ',SPY:'AMEX',DIA:'AMEX',
+    NVDA:'NASDAQ',AAPL:'NASDAQ',TSLA:'NASDAQ',META:'NASDAQ',
+    MSFT:'NASDAQ',AMZN:'NASDAQ',GOOGL:'NASDAQ',ASML:'NASDAQ',
+    TSM:'NYSE',PLTR:'NYSE',AMD:'NASDAQ',
+    XLK:'AMEX',XLF:'AMEX',XLE:'AMEX',XLV:'AMEX',
+    XLY:'AMEX',XLI:'AMEX',XLC:'AMEX',XLB:'AMEX'
 };
 
-// ── Sparkline SVG helper ───────────────────────────────────────────
-function drawSparkline(svgEl, prices, color) {
-    if (!prices || prices.length < 2) return;
-    const W = 80, H = 36;
-    const min = Math.min(...prices);
-    const max = Math.max(...prices);
-    const range = max - min || 1;
-    const pts = prices.map((p, i) => {
-        const x = (i / (prices.length - 1)) * W;
-        const y = H - ((p - min) / range) * (H - 4) - 2;
+// ═══════════════════════════════════════════════════════════
+//  Sparkline SVG
+// ═══════════════════════════════════════════════════════════
+function drawSparkline(el, prices, color, W=76, H=34) {
+    if(!prices||prices.length<2) return;
+    const mn=Math.min(...prices), mx=Math.max(...prices), rng=mx-mn||1;
+    const pts=prices.map((p,i)=>{
+        const x=(i/(prices.length-1))*W;
+        const y=H-((p-mn)/rng)*(H-4)-2;
         return `${x.toFixed(1)},${y.toFixed(1)}`;
     }).join(' ');
-    svgEl.setAttribute('viewBox', `0 0 ${W} ${H}`);
-    svgEl.innerHTML = `
-        <polyline points="${pts}" fill="none" stroke="${color}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.8"/>
-    `;
+    el.setAttribute('viewBox',`0 0 ${W} ${H}`);
+    el.innerHTML=`<polyline points="${pts}" fill="none" stroke="${color}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.85"/>`;
 }
 
-// ── Load sparklines ────────────────────────────────────────────────
-async function loadSparkline(symbol) {
+async function loadSparkline(symbol, W=76, H=34) {
     try {
-        const res  = await fetch(`/api/candles/${symbol}`);
-        const data = await res.json();
-        const prices = data.c || [];
-        if (!prices.length) return;
-        const last7 = prices.slice(-14);
-        const el = document.getElementById(`spark-${symbol}`);
-        if (!el) return;
-        const change = prices[prices.length - 1] - prices[prices.length - 2];
-        const color  = change >= 0 ? '#5cba8a' : '#d96060';
-        drawSparkline(el, last7, color);
-    } catch(e) {}
+        const r=await fetch(`/api/candles/${symbol}`);
+        const d=await r.json();
+        const prices=(d.c||[]).slice(-14);
+        if(prices.length<2) return;
+        const el=document.getElementById(`spark-${symbol}`);
+        if(!el) return;
+        const chg=prices[prices.length-1]-prices[prices.length-2];
+        drawSparkline(el, prices, chg>=0?'#5cba8a':'#d96060', W, H);
+    } catch(e){}
 }
 
-// ── Fetch all data ─────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════
+//  Fetch & Refresh
+// ═══════════════════════════════════════════════════════════
 async function fetchAll() {
     try {
         const res  = await fetch('/api/all');
         const data = await res.json();
-        renderMarket(data.market);
-        allNews = data.news;
+        allQuotes  = data.market || [];
+        allNews    = data.news   || [];
+        renderMarket(allQuotes);
         renderNews();
-        document.getElementById('last-update').textContent = 'Updated ' + new Date(data.updated).toLocaleTimeString('en-MY', {hour:'2-digit',minute:'2-digit'});
+        const t = new Date(data.updated);
+        startCountdown();
+        document.getElementById('refresh-info').textContent =
+            'Updated '+t.toLocaleTimeString('en-MY',{hour:'2-digit',minute:'2-digit'})+' · click to refresh';
     } catch(e) {
-        console.error('Fetch error:', e);
+        console.error(e);
+        document.getElementById('refresh-info').textContent = 'Update failed — click to retry';
     }
 }
 
-// ── Market render ──────────────────────────────────────────────────
-const INDEX_MAP = { 'QQQ':'ixic', 'SPY':'gspc', 'DIA':'dji' };
+function forceRefresh() {
+    document.getElementById('refresh-info').textContent = 'Refreshing...';
+    clearInterval(countdownTmr);
+    fetchAll();
+}
+
+function startCountdown() {
+    countdown = 120;
+    clearInterval(countdownTmr);
+    countdownTmr = setInterval(() => {
+        countdown--;
+        if(countdown <= 0) {
+            clearInterval(countdownTmr);
+            fetchAll();
+        } else {
+            const el = document.getElementById('refresh-info');
+            const t  = document.getElementById('last-update-time');
+            if(el && el.textContent.includes('·'))
+                el.textContent = el.textContent.replace(/·.+/, `· refresh in ${countdown}s`);
+        }
+    }, 1000);
+}
+
+// ═══════════════════════════════════════════════════════════
+//  Render Market
+// ═══════════════════════════════════════════════════════════
+const IDX_MAP = { QQQ:'ixic', SPY:'gspc', DIA:'dji' };
 
 function renderMarket(quotes) {
-    if (!quotes || !quotes.length) return;
+    if(!quotes||!quotes.length) return;
 
-    const indices = quotes.filter(q => q.type === 'index');
-    const stocks  = quotes.filter(q => q.type === 'stock');
-    const sectors = quotes.filter(q => q.type === 'sector');
+    const indices = quotes.filter(q=>q.type==='index');
+    const stocks  = quotes.filter(q=>q.type==='stock');
+    const sectors = quotes.filter(q=>q.type==='sector');
 
-    // ── Indices row ──
-    for (const q of indices) {
-        const key = INDEX_MAP[q.symbol];
-        if (!key) continue;
-        const priceEl = document.getElementById(`idx-${key}`);
-        const chgEl   = document.getElementById(`idx-${key}-chg`);
-        if (priceEl) priceEl.textContent = fmtPrice(q.regularMarketPrice);
-        if (chgEl) {
-            chgEl.textContent = fmtChg(q.regularMarketChange) + '  ' + fmtPct(q.regularMarketChangePercent);
-            chgEl.className   = 'index-change ' + chgClass(q.regularMarketChange);
-        }
+    // ── Indices
+    for(const q of indices){
+        const k=IDX_MAP[q.symbol]; if(!k) continue;
+        const pe=document.getElementById(`idx-${k}`);
+        const ce=document.getElementById(`idx-${k}-chg`);
+        if(pe) pe.textContent=fmtP(q.regularMarketPrice);
+        if(ce){ ce.textContent=fmtC(q.regularMarketChange)+'  '+fmtPct(q.regularMarketChangePercent); ce.className='idx-chg '+cls(q.regularMarketChange); }
     }
 
-    // ── Sector heatmap ──
-    const sectorGrid = document.getElementById('sector-grid');
-    if (sectors.length) {
-        sectorGrid.innerHTML = sectors.map(s => {
-            const pct  = s.regularMarketChangePercent || 0;
-            const abs  = Math.abs(pct);
-            const intensity = Math.min(abs / 3, 1); // saturate at ±3%
+    // ── Sector heatmap
+    const sg=document.getElementById('sector-grid');
+    if(sectors.length){
+        sg.innerHTML=sectors.map(s=>{
+            const pct=s.regularMarketChangePercent||0;
+            const abs=Math.abs(pct), intensity=Math.min(abs/2.5,1);
             let bg;
-            if (pct > 0) {
-                const g = Math.round(40 + intensity * 70);
-                const r = Math.round(10 + (1-intensity) * 30);
-                bg = `rgb(${r},${g},${Math.round(10+intensity*20)})`;
-            } else if (pct < 0) {
-                const r = Math.round(60 + intensity * 90);
-                const g = Math.round(10 + (1-intensity) * 20);
-                bg = `rgb(${r},${g},${Math.round(10+intensity*10)})`;
-            } else {
-                bg = '#1a1a2c';
-            }
+            if(pct>0){
+                const g=Math.round(50+intensity*80), r=Math.round(8+(1-intensity)*25);
+                bg=`rgb(${r},${g},${Math.round(12+intensity*18)})`;
+            } else if(pct<0){
+                const r=Math.round(80+intensity*100), g=Math.round(8+(1-intensity)*20);
+                bg=`rgb(${r},${g},${Math.round(8+intensity*12)})`;
+            } else bg='#1a1a2c';
             return `<div class="sector-cell" style="background:${bg}" onclick="openChart('${s.symbol}','${s.shortName}')">
-                <div class="sector-name">${s.shortName}</div>
-                <div class="sector-pct">${fmtPct(pct)}</div>
+                <div class="sc-name">${s.shortName}</div>
+                <div class="sc-symbol">${s.symbol}</div>
+                <div class="sc-pct">${fmtPct(pct)}</div>
             </div>`;
         }).join('');
     }
 
-    // ── Ticker — all stocks ──
-    const tickerItems = [...stocks, ...stocks].map(q => `
-        <span class="ticker-item">
+    // ── Ticker
+    const tick=[...stocks,...stocks].map(q=>`
+        <span class="ticker-item" style="cursor:pointer" onclick="openChart('${q.symbol}','${q.shortName||q.symbol}')">
             <span class="ticker-symbol">${q.symbol}</span>
-            <span class="ticker-price">${fmtPrice(q.regularMarketPrice)}</span>
-            <span class="ticker-change ${chgClass(q.regularMarketChange)}">${fmtPct(q.regularMarketChangePercent)}</span>
+            <span class="ticker-price">${fmtP(q.regularMarketPrice)}</span>
+            <span class="${cls(q.regularMarketChange)==='up'?'t-up':cls(q.regularMarketChange)==='down'?'t-down':'t-flat'}">${fmtPct(q.regularMarketChangePercent)}</span>
         </span>`).join('');
-    document.getElementById('ticker-track').innerHTML = tickerItems
-        || '<span style="font-family:\'Syne Mono\',monospace;font-size:.68rem;color:var(--text-3)">Market data unavailable</span>';
+    document.getElementById('ticker-track').innerHTML=tick||'<span style="font-family:\'Syne Mono\',monospace;font-size:.67rem;color:var(--text-3)">Market data unavailable</span>';
 
-    // ── Watchlist — stocks with sparklines ──
-    const wb = document.getElementById('watchlist-body');
-    wb.innerHTML = stocks.map(q => `
+    // ── Top Movers (top 2 up + top 2 down)
+    const sorted=[...stocks].sort((a,b)=>b.regularMarketChangePercent-a.regularMarketChangePercent);
+    const gainers=sorted.slice(0,2);
+    const losers=sorted.slice(-2).reverse();
+    const movers=[...gainers,...losers];
+    document.getElementById('movers-grid').innerHTML=movers.map(q=>{
+        const dir=q.regularMarketChangePercent>=0?'up':'down';
+        return `<div class="mover-item ${dir}" onclick="openChart('${q.symbol}','${q.shortName||q.symbol}')">
+            <div class="mv-sym">${q.symbol}</div>
+            <div class="mv-name">${q.shortName||''}</div>
+            <div class="mv-pct ${dir}">${fmtPct(q.regularMarketChangePercent)}</div>
+        </div>`;
+    }).join('');
+
+    // ── Watchlist
+    const wb=document.getElementById('watchlist-body');
+    wb.innerHTML=stocks.map(q=>`
         <div class="watchlist-item" onclick="openChart('${q.symbol}','${q.shortName||q.symbol}')">
-            <div class="w-left">
-                <div class="w-symbol">${q.symbol}</div>
-                <div class="w-name">${q.shortName || ''}</div>
+            <div>
+                <div class="w-sym">${q.symbol}</div>
+                <div class="w-name">${q.shortName||''}</div>
             </div>
             <svg class="w-spark" id="spark-${q.symbol}"></svg>
             <div class="w-right">
-                <div class="w-price">${fmtPrice(q.regularMarketPrice)}</div>
-                <div class="w-change ${chgClass(q.regularMarketChange)}">${fmtPct(q.regularMarketChangePercent)}</div>
+                <div class="w-price">${fmtP(q.regularMarketPrice)}</div>
+                <div class="w-chg ${cls(q.regularMarketChange)}">${fmtPct(q.regularMarketChangePercent)}</div>
             </div>
-        </div>`).join('') || '<div class="loading-state"><p>No data</p></div>';
+        </div>`).join('')||'<div class="empty-state"><p>No data</p></div>';
 
-    // Load sparklines for all symbols (staggered to avoid rate limits)
-    const allSymbols = [...indices.map(q=>q.symbol), ...stocks.map(q=>q.symbol)];
-    allSymbols.forEach((sym, i) => setTimeout(() => loadSparkline(sym), i * 300));
+    // ── Sparklines (staggered)
+    [...indices,...stocks].forEach((q,i)=>setTimeout(()=>loadSparkline(q.symbol),i*280));
 }
 
-// ── News render ────────────────────────────────────────────────────
-function setFilter(f, btn) {
-    activeFilter = f;
-    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+// ═══════════════════════════════════════════════════════════
+//  Render News
+// ═══════════════════════════════════════════════════════════
+function setFilter(f,btn){
+    activeFilter=f;
+    document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
     btn.classList.add('active');
     renderNews();
 }
 
-function renderNews() {
-    const filtered = activeFilter === 'all' ? allNews : allNews.filter(n => n.sentiment === activeFilter);
+function renderNews(){
+    const q=(document.getElementById('search-input').value||'').toLowerCase().trim();
 
-    // Sentiment gauge
-    const bull  = allNews.filter(n=>n.sentiment==='bullish').length;
-    const bear  = allNews.filter(n=>n.sentiment==='bearish').length;
-    const total = bull + bear || 1;
-    const score = bull / total;
-    document.getElementById('gauge-ptr').style.left = (score * 100) + '%';
-    const labels      = ['Extreme Fear','Fear','Neutral','Greed','Extreme Greed'];
-    const labelColors = ['var(--red)','#e07a40','var(--text-2)','#8aba6a','var(--green)'];
-    const li = Math.min(4, Math.floor(score * 5));
-    document.getElementById('gauge-label').textContent = labels[li];
-    document.getElementById('gauge-label').style.color = labelColors[li];
+    // Filter
+    let list=allNews;
+    if(activeFilter!=='all') list=list.filter(n=>n.sentiment===activeFilter);
+    if(q) list=list.filter(n=>(n.title+' '+n.summary).toLowerCase().includes(q));
 
-    if (!filtered.length) {
-        document.getElementById('news-list').innerHTML = `<div class="loading-state"><p>No ${activeFilter} news found.</p></div>`;
+    // Update counts on buttons
+    const bull=allNews.filter(n=>n.sentiment==='bullish').length;
+    const bear=allNews.filter(n=>n.sentiment==='bearish').length;
+    document.getElementById('cnt-all').textContent=allNews.length||'';
+    document.getElementById('cnt-bullish').textContent=bull||'';
+    document.getElementById('cnt-bearish').textContent=bear||'';
+
+    // Gauge
+    const total=bull+bear||1, score=bull/total;
+    document.getElementById('gauge-ptr').style.left=(score*100)+'%';
+    const labels=['Extreme Fear','Fear','Neutral','Greed','Extreme Greed'];
+    const lclr  =['var(--red)','#e07a40','var(--text-2)','#8aba6a','var(--green)'];
+    const li=Math.min(4,Math.floor(score*5));
+    const gl=document.getElementById('gauge-label');
+    gl.textContent=labels[li]; gl.style.color=lclr[li];
+
+    if(!list.length){
+        document.getElementById('news-list').innerHTML=`<div class="empty-state"><p>${q?'No results for "'+q+'"':'No '+activeFilter+' news found.'}</p></div>`;
         return;
     }
 
-    document.getElementById('news-list').innerHTML = filtered.map(n => `
-        <a class="news-item" href="${n.link}" target="_blank" rel="noopener">
+    document.getElementById('news-list').innerHTML=list.map(n=>`
+        <a class="news-item ${n.sentiment!=='neutral'?n.sentiment+'-border':''}" href="${n.link}" target="_blank" rel="noopener">
             <div class="news-meta">
                 <span class="news-source">${n.source}</span>
                 <span class="news-time">${timeAgo(n.date)}</span>
-                <span class="sentiment-badge ${n.sentiment}">${n.sentiment}</span>
+                <span class="s-badge ${n.sentiment}">${n.sentiment}</span>
             </div>
             <div class="news-title">${n.title}</div>
-            ${n.summary ? `<div class="news-summary">${n.summary}</div>` : ''}
-            ${n.impacts.length ? `<div class="impact-tags">${n.impacts.flatMap(i => i.tags.map(t => `<span class="impact-tag" style="color:${i.color};border-color:${i.color}33;background:${i.color}10">${t}</span>`)).join('')}</div>` : ''}
+            ${n.summary?`<div class="news-summary">${n.summary}</div>`:''}
+            ${n.impacts.length?`<div class="impact-tags">${n.impacts.flatMap(i=>i.tags.map(t=>`<span class="impact-tag" style="color:${i.color};border-color:${i.color}33;background:${i.color}0d">${t}</span>`)).join('')}</div>`:''}
         </a>`).join('');
 }
 
-// ── TradingView Chart Modal ────────────────────────────────────────
-let tvScriptLoaded = false;
+// ═══════════════════════════════════════════════════════════
+//  TradingView Modal
+// ═══════════════════════════════════════════════════════════
+let tvLoaded=false;
 
-function openChart(symbol, name) {
-    const modal = document.getElementById('tv-modal');
-    const body  = document.getElementById('tv-modal-body');
-    const title = document.getElementById('tv-modal-title');
+function openChart(symbol,name){
+    const modal=document.getElementById('tv-modal');
+    const body=document.getElementById('tv-body');
+    const q=allQuotes.find(x=>x.symbol===symbol);
 
-    const exchange = TV_EXCHANGE[symbol] || 'NASDAQ';
-    const tvSym    = `${exchange}:${symbol}`;
+    document.getElementById('tv-title').textContent=`${symbol} — ${name}`;
+    document.getElementById('tv-price-info').textContent=
+        q ? `${fmtP(q.regularMarketPrice)}  ${fmtPct(q.regularMarketChangePercent)}` : '';
 
-    title.textContent = `${symbol} — ${name}`;
-    body.innerHTML    = `<div id="tv_widget_container" style="width:100%;height:100%"></div>`;
+    body.innerHTML=`<div id="tv_c" style="width:100%;height:100%"></div>`;
     modal.classList.add('open');
-    document.body.style.overflow = 'hidden';
+    document.body.style.overflow='hidden';
 
-    function createWidget() {
-        new TradingView.widget({
-            container_id: 'tv_widget_container',
-            autosize:     true,
-            symbol:       tvSym,
-            interval:     'D',
-            timezone:     'America/New_York',
-            theme:        'dark',
-            style:        '1',
-            locale:       'en',
-            toolbar_bg:   '#0d0d18',
-            hide_side_toolbar: false,
-            allow_symbol_change: true,
-            save_image:   false,
-        });
-    }
+    const create=()=>new TradingView.widget({
+        container_id:'tv_c', autosize:true,
+        symbol:`${TV_EX[symbol]||'NASDAQ'}:${symbol}`,
+        interval:'D', timezone:'America/New_York',
+        theme:'dark', style:'1', locale:'en',
+        toolbar_bg:'#0d0d18',
+        hide_side_toolbar:false, allow_symbol_change:true, save_image:false,
+    });
 
-    if (!tvScriptLoaded) {
-        const s = document.createElement('script');
-        s.src = 'https://s3.tradingview.com/tv.js';
-        s.onload = () => { tvScriptLoaded = true; createWidget(); };
+    if(!tvLoaded){
+        const s=document.createElement('script');
+        s.src='https://s3.tradingview.com/tv.js';
+        s.onload=()=>{ tvLoaded=true; create(); };
         document.head.appendChild(s);
-    } else {
-        createWidget();
-    }
+    } else create();
 }
 
-function closeChart(e) {
-    if (e && e.target !== document.getElementById('tv-modal')) return;
+function closeChart(e){
+    if(e&&e.target!==document.getElementById('tv-modal')) return;
     document.getElementById('tv-modal').classList.remove('open');
-    document.getElementById('tv-modal-body').innerHTML = '';
-    document.body.style.overflow = '';
+    document.getElementById('tv-body').innerHTML='';
+    document.body.style.overflow='';
 }
 
-document.addEventListener('keydown', e => {
-    if (e.key === 'Escape') closeChart(null);
-});
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeChart(null); });
 
-// ── Init & Auto-refresh ────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════
+//  Init
+// ═══════════════════════════════════════════════════════════
 fetchAll();
 setInterval(fetchAll, REFRESH_MS);
-setInterval(() => { if(allNews.length) renderNews(); }, 60 * 1000);
+setInterval(()=>{ if(allNews.length) renderNews(); }, 60000);
 </script>
 </body>
 </html>
