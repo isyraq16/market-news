@@ -233,6 +233,45 @@ async function fetchNews() {
     return cache.news;
 }
 
+// ── Yield Curve ──────────────────────────────────────────────────
+let yieldCache = null, yieldLastFetch = 0;
+const YIELD_TTL = 60 * 60 * 1000; // 1 hour
+
+async function fetchYields() {
+    if (yieldCache && Date.now() - yieldLastFetch < YIELD_TTL) return yieldCache;
+    try {
+        const now = new Date();
+        const ym = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}`;
+        const url = `https://home.treasury.gov/resource-center/data-chart-center/interest-rates/pages/xml?data=daily_treasury_yield_curve&field_tdr_date_value=${ym}`;
+        const xml = await fetch(url);
+        const entries = xml.split('<entry>');
+        const last = entries[entries.length - 1];
+        const fields = [
+            { key: 'BC_1MONTH',  label: '1M' },
+            { key: 'BC_3MONTH',  label: '3M' },
+            { key: 'BC_6MONTH',  label: '6M' },
+            { key: 'BC_1YEAR',   label: '1Y' },
+            { key: 'BC_2YEAR',   label: '2Y' },
+            { key: 'BC_3YEAR',   label: '3Y' },
+            { key: 'BC_5YEAR',   label: '5Y' },
+            { key: 'BC_7YEAR',   label: '7Y' },
+            { key: 'BC_10YEAR',  label: '10Y' },
+            { key: 'BC_20YEAR',  label: '20Y' },
+            { key: 'BC_30YEAR',  label: '30Y' },
+        ];
+        const result = [];
+        for (const f of fields) {
+            const m = last.match(new RegExp(`<d:${f.key}[^>]*>([0-9.]+)<`));
+            if (m) result.push({ label: f.label, yield: parseFloat(m[1]) });
+        }
+        if (result.length) { yieldCache = result; yieldLastFetch = Date.now(); }
+        return yieldCache || [];
+    } catch (e) {
+        console.error('Yield fetch error:', e.message);
+        return yieldCache || [];
+    }
+}
+
 // ── Routes ────────────────────────────────────────────────────────
 app.use(express.static(path.join(__dirname)));
 
@@ -244,6 +283,10 @@ app.get('/api/market', async (req, res) => {
 app.get('/api/news', async (req, res) => {
     const data = await fetchNews();
     res.json(data);
+});
+
+app.get('/api/yields', async (req, res) => {
+    res.json(await fetchYields());
 });
 
 app.get('/api/all', async (req, res) => {

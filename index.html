@@ -205,6 +205,43 @@
         .w-chg  { font-family:'IBM Plex Mono',monospace; font-size:.62rem; margin-top:.05rem; }
         .w-chg.up{color:var(--green)} .w-chg.dn{color:var(--red)} .w-chg.flat{color:var(--t2)}
 
+        /* ─── HEAT MAP ─── */
+        .hm-wrap { padding:.8rem 1rem 1rem; border-top:1px solid var(--bd); }
+        .hm-title { font-size:.78rem; font-weight:600; margin-bottom:.65rem; }
+        .hm-grid { display:flex; flex-wrap:wrap; gap:3px; }
+        .hm-cell { display:flex; flex-direction:column; align-items:center; justify-content:center; border-radius:4px; cursor:pointer; transition:filter .12s; padding:.45rem .3rem; min-width:60px; flex:1; }
+        .hm-cell:hover { filter:brightness(1.35); }
+        .hm-sym { font-family:'IBM Plex Mono',monospace; font-size:.68rem; font-weight:600; color:#fff; }
+        .hm-pct { font-family:'IBM Plex Mono',monospace; font-size:.57rem; color:rgba(255,255,255,.75); margin-top:.12rem; }
+
+        /* ─── YIELD CURVE ─── */
+        .yc-wrap { padding:.9rem 1rem; border-bottom:1px solid var(--bd); }
+        .yc-svg { width:100%; height:90px; display:block; overflow:visible; }
+        .yc-meta { display:flex; justify-content:space-between; align-items:center; margin-top:.4rem; flex-wrap:wrap; gap:.3rem; }
+        .yc-spread { font-family:'IBM Plex Mono',monospace; font-size:.6rem; color:var(--t2); }
+        .yc-status { font-family:'IBM Plex Mono',monospace; font-size:.6rem; }
+        .yc-xlabels { display:flex; justify-content:space-between; margin-top:.15rem; }
+        .yc-xl { font-family:'IBM Plex Mono',monospace; font-size:.44rem; color:var(--t3); }
+
+        /* ─── PORTFOLIO ─── */
+        .pf-wrap { padding:.9rem 1rem; border-bottom:1px solid var(--bd); }
+        .pf-total { font-family:'IBM Plex Mono',monospace; font-size:.88rem; font-weight:500; margin:.35rem 0 .65rem; }
+        .pf-add { display:flex; gap:.3rem; margin-bottom:.55rem; flex-wrap:wrap; }
+        .pf-in { background:var(--bg); border:1px solid var(--bd2); color:var(--text); padding:.3rem .5rem; font-family:'IBM Plex Mono',monospace; font-size:.63rem; border-radius:4px; outline:none; min-width:0; }
+        .pf-in:focus { border-color:var(--t2); }
+        .pf-in::placeholder { color:var(--t3); }
+        .pf-in-sym { flex:1.2; }
+        .pf-in-num { flex:1; }
+        .pf-btn { background:var(--text); color:var(--bg); border:none; padding:.3rem .65rem; border-radius:4px; font-family:'IBM Plex Mono',monospace; font-size:.63rem; cursor:pointer; font-weight:600; white-space:nowrap; flex-shrink:0; }
+        .pf-btn:hover { opacity:.85; }
+        .pf-row { display:grid; grid-template-columns:auto 1fr auto auto; gap:.3rem .5rem; padding:.45rem 0; border-bottom:1px solid var(--bd); align-items:center; font-family:'IBM Plex Mono',monospace; font-size:.65rem; }
+        .pf-sym { font-weight:600; }
+        .pf-info { font-size:.57rem; color:var(--t2); }
+        .pf-val { text-align:right; line-height:1.5; }
+        .pf-del { background:none; border:none; color:var(--t3); cursor:pointer; font-size:.72rem; padding:.1rem .2rem; line-height:1; }
+        .pf-del:hover { color:var(--red); }
+        .pf-empty { font-size:.62rem; color:var(--t3); font-family:'IBM Plex Mono',monospace; padding:.4rem 0; }
+
         /* ─── LEARN TIPS ─── */
         .learn-tip { margin:.8rem 1rem; padding:.65rem .8rem; background:var(--s2); border-radius:6px; border-left:3px solid var(--gold); font-size:.7rem; color:var(--t2); line-height:1.5; }
         .learn-tip strong { color:var(--gold); }
@@ -391,6 +428,11 @@
                 <div class="skel" style="height:80px;border-radius:6px"></div>
             </div>
         </div>
+        <!-- Heat Map -->
+        <div class="hm-wrap">
+            <div class="hm-title">🔥 Stock Heat Map</div>
+            <div class="hm-grid" id="hm-grid"></div>
+        </div>
     </div>
 
     <!-- ── NEWS TAB ── -->
@@ -434,6 +476,31 @@
             <div class="gauge-row"><span>😱 Panic</span><span>😐 Calm</span><span>🚀 Hype</span></div>
             <div class="gauge-val" id="gauge-val" style="color:var(--t2)">—</div>
             <div class="gauge-tip" id="gauge-tip">Loading sentiment...</div>
+        </div>
+
+        <!-- Yield Curve -->
+        <div class="yc-wrap sb">
+            <div class="sb-title">📈 US Yield Curve</div>
+            <div class="sb-desc">Treasury bond yields by maturity. An inverted curve (short > long) has predicted every US recession.</div>
+            <svg class="yc-svg" id="yc-svg"></svg>
+            <div class="yc-xlabels" id="yc-xlabels"></div>
+            <div class="yc-meta">
+                <span class="yc-spread" id="yc-spread">Loading yields...</span>
+                <span class="yc-status" id="yc-status"></span>
+            </div>
+        </div>
+
+        <!-- Portfolio Tracker -->
+        <div class="pf-wrap sb">
+            <div class="sb-title">💼 Portfolio Tracker</div>
+            <div class="pf-total" id="pf-total">Add your holdings below</div>
+            <div class="pf-add">
+                <input class="pf-in pf-in-sym" id="pf-sym" placeholder="Ticker (e.g. AAPL)" autocomplete="off" autocapitalize="characters">
+                <input class="pf-in pf-in-num" id="pf-shares" placeholder="Shares" type="number" min="0" step="any">
+                <input class="pf-in pf-in-num" id="pf-cost" placeholder="Avg cost $" type="number" min="0" step="any">
+                <button class="pf-btn" onclick="addHolding()">+ Add</button>
+            </div>
+            <div id="pf-body"><div class="pf-empty">No holdings yet — add a stock above</div></div>
         </div>
 
         <!-- Top movers -->
@@ -637,7 +704,10 @@ async function loadSpark(sym,W,H){
 // ══════════ FETCH ══════════
 async function fetchAll(){
     try{
-        const data=await(await fetch('/api/all')).json();
+        const [data, yieldsData] = await Promise.all([
+            fetch('/api/all').then(r=>r.json()),
+            fetch('/api/yields').then(r=>r.json()).catch(()=>[])
+        ]);
         allQuotes=data.market||[]; allNews=data.news||[];
         if(!allQuotes.length&&retries<6){
             retries++;
@@ -655,6 +725,9 @@ async function fetchAll(){
         ['ref-btn','ref-btn-2'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent='Updated '+ts+' · tap to refresh';});
         startCountdown();
         preloadMapScripts();
+        renderHeatMap(allQuotes);
+        renderYieldCurve(yieldsData);
+        renderPortfolio();
         // On desktop all panes are visible — init map automatically after data loads
         if (window.innerWidth >= 900) initMap();
     }catch(e){
@@ -880,6 +953,130 @@ function closeChart(e){
     document.body.style.overflow='';
 }
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeChart(null);});
+
+// ══════════ HEAT MAP ══════════
+function heatColor(pct) {
+    if (pct >=  4) return '#0e5c2e';
+    if (pct >=  2) return '#145e30';
+    if (pct >=  0.5) return '#1a5e38';
+    if (pct > -0.5) return '#2a2a2a';
+    if (pct >= -2) return '#5e1a1a';
+    if (pct >= -4) return '#5e1212';
+    return '#6b0a0a';
+}
+
+function renderHeatMap(quotes) {
+    const stocks = quotes.filter(q => q.type === 'stock');
+    const grid = document.getElementById('hm-grid');
+    if (!grid || !stocks.length) return;
+    grid.innerHTML = stocks.map(q => {
+        const pct = q.regularMarketChangePercent || 0;
+        const sign = pct >= 0 ? '+' : '';
+        return `<div class="hm-cell" style="background:${heatColor(pct)}" onclick="openChart('${q.symbol}','${q.shortName}')">
+            <div class="hm-sym">${q.symbol}</div>
+            <div class="hm-pct">${sign}${pct.toFixed(2)}%</div>
+        </div>`;
+    }).join('');
+}
+
+// ══════════ YIELD CURVE ══════════
+function renderYieldCurve(data) {
+    const svg = document.getElementById('yc-svg');
+    const xlabels = document.getElementById('yc-xlabels');
+    const spreadEl = document.getElementById('yc-spread');
+    const statusEl = document.getElementById('yc-status');
+    if (!svg || !data || !data.length) {
+        if (spreadEl) spreadEl.textContent = 'Yield data unavailable';
+        return;
+    }
+    const W = 260, H = 80;
+    const yields = data.map(d => d.yield);
+    const minY = Math.min(...yields) - 0.15;
+    const maxY = Math.max(...yields) + 0.15;
+    const toX = i => (i / (data.length - 1)) * (W - 16) + 8;
+    const toY = v => H - ((v - minY) / (maxY - minY)) * (H - 8) - 4;
+
+    const y2 = data.find(d => d.label === '2Y')?.yield;
+    const y10 = data.find(d => d.label === '10Y')?.yield;
+    const spread = (y2 && y10) ? (y10 - y2).toFixed(2) : null;
+    const inverted = spread !== null && parseFloat(spread) < 0;
+    const color = inverted ? '#e05050' : '#c9a55a';
+
+    const pts = data.map((d, i) => `${toX(i).toFixed(1)},${toY(d.yield).toFixed(1)}`).join(' ');
+    const dots = data.map((d, i) => `<circle cx="${toX(i).toFixed(1)}" cy="${toY(d.yield).toFixed(1)}" r="2" fill="${color}"/>
+        <title>${d.label}: ${d.yield}%</title>`).join('');
+
+    svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+    svg.innerHTML = `<polyline points="${pts}" fill="none" stroke="${color}" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>${dots}`;
+
+    if (xlabels) xlabels.innerHTML = data.map(d => `<span class="yc-xl">${d.label}</span>`).join('');
+    if (spreadEl) spreadEl.textContent = spread ? `2Y–10Y spread: ${spread > 0 ? '+' : ''}${spread}%` : '';
+    if (statusEl) {
+        statusEl.textContent = inverted ? '⚠️ Inverted — recession signal' : '✅ Normal curve';
+        statusEl.style.color = inverted ? 'var(--red)' : 'var(--green)';
+    }
+}
+
+// ══════════ PORTFOLIO TRACKER ══════════
+let portfolio = JSON.parse(localStorage.getItem('orca_portfolio') || '[]');
+
+function renderPortfolio() {
+    const body = document.getElementById('pf-body');
+    const totalEl = document.getElementById('pf-total');
+    if (!body) return;
+    if (!portfolio.length) {
+        body.innerHTML = '<div class="pf-empty">No holdings yet — add a stock above</div>';
+        if (totalEl) totalEl.textContent = 'Add your holdings below';
+        return;
+    }
+    let totalValue = 0, totalCost = 0;
+    const rows = portfolio.map((h, i) => {
+        const q = allQuotes.find(x => x.symbol === h.symbol);
+        const price = q ? q.regularMarketPrice : null;
+        const value = price ? price * h.shares : null;
+        const cost = h.avgCost * h.shares;
+        const pnl = value !== null ? value - cost : null;
+        const pnlPct = pnl !== null ? (pnl / cost * 100) : null;
+        if (value) totalValue += value;
+        totalCost += cost;
+        const pnlColor = pnl > 0 ? 'var(--green)' : pnl < 0 ? 'var(--red)' : 'var(--t2)';
+        return `<div class="pf-row">
+            <div class="pf-sym">${h.symbol}</div>
+            <div class="pf-info">${h.shares} sh × $${h.avgCost.toFixed(2)}</div>
+            <div class="pf-val">
+                <div>${value !== null ? '$' + value.toFixed(0) : '—'}</div>
+                <div style="color:${pnlColor};font-size:.57rem">${pnl !== null ? (pnl >= 0 ? '+' : '') + '$' + pnl.toFixed(0) + ' (' + pnlPct.toFixed(1) + '%)' : '—'}</div>
+            </div>
+            <button class="pf-del" onclick="removeHolding(${i})">✕</button>
+        </div>`;
+    }).join('');
+    body.innerHTML = rows;
+    const totalPnl = totalValue - totalCost;
+    const totalPnlPct = totalCost > 0 ? (totalPnl / totalCost * 100).toFixed(1) : 0;
+    const pnlColor = totalPnl >= 0 ? 'var(--green)' : 'var(--red)';
+    if (totalEl) totalEl.innerHTML = `$${totalValue.toFixed(0)} <span style="color:${pnlColor};font-size:.7rem">${totalPnl >= 0 ? '+' : ''}$${totalPnl.toFixed(0)} (${totalPnlPct}%)</span>`;
+}
+
+function addHolding() {
+    const sym = (document.getElementById('pf-sym').value || '').trim().toUpperCase();
+    const shares = parseFloat(document.getElementById('pf-shares').value);
+    const cost = parseFloat(document.getElementById('pf-cost').value);
+    if (!sym || !shares || !cost || shares <= 0 || cost <= 0) return;
+    const idx = portfolio.findIndex(h => h.symbol === sym);
+    if (idx >= 0) portfolio[idx] = { symbol: sym, shares, avgCost: cost };
+    else portfolio.push({ symbol: sym, shares, avgCost: cost });
+    localStorage.setItem('orca_portfolio', JSON.stringify(portfolio));
+    document.getElementById('pf-sym').value = '';
+    document.getElementById('pf-shares').value = '';
+    document.getElementById('pf-cost').value = '';
+    renderPortfolio();
+}
+
+function removeHolding(i) {
+    portfolio.splice(i, 1);
+    localStorage.setItem('orca_portfolio', JSON.stringify(portfolio));
+    renderPortfolio();
+}
 
 // ══════════ WORLD MAP ══════════
 let mapReady = false, mapRoot = null, mapCountryFilter = null;
