@@ -937,13 +937,7 @@ function countryColor(d) {
 
 function initMap() {
     if (mapReady) { updateMap(); return; }
-    console.log('[map] initMap called, am5:', typeof am5, 'am5map:', typeof am5map, 'geodata:', typeof am5geodata_worldLow);
-    try {
-        buildMap();
-    } catch(e) {
-        console.error('[map] buildMap error:', e);
-        document.getElementById('map-div').innerHTML = '<div class="map-loading"><p>Map error: ' + e.message + '</p></div>';
-    }
+    buildMap();
 }
 
 function buildMap() {
