@@ -950,6 +950,7 @@ function buildMap() {
     mapReady = true;
     const mapData = buildMapData(allNews);
 
+    document.getElementById('map-div').innerHTML = '';
     const root = am5.Root.new('map-div');
     mapRoot = root;
     root.setThemes([am5themes_Animated.new(root)]);
