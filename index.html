@@ -11,6 +11,11 @@
     <meta name="apple-mobile-web-app-title" content="Markets">
     <link rel="apple-touch-icon" href="/icon.svg">
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <!-- amCharts 5 — preloaded in parallel so World tab is instant -->
+    <script src="https://cdn.amcharts.com/lib/5/index.js" defer></script>
+    <script src="https://cdn.amcharts.com/lib/5/map.js" defer></script>
+    <script src="https://cdn.amcharts.com/lib/5/geodata/worldLow.js" defer></script>
+    <script src="https://cdn.amcharts.com/lib/5/themes/Animated.js" defer></script>
     <style>
         :root {
             --bg:    #000;
@@ -920,21 +925,13 @@ function countryColor(d) {
 
 function initMap() {
     if (mapReady) { updateMap(); return; }
-    const urls = [
-        'https://cdn.amcharts.com/lib/5/index.js',
-        'https://cdn.amcharts.com/lib/5/map.js',
-        'https://cdn.amcharts.com/lib/5/geodata/worldLow.js',
-        'https://cdn.amcharts.com/lib/5/themes/Animated.js',
-    ];
-    function loadNext(i) {
-        if (i >= urls.length) { buildMap(); return; }
-        const s = document.createElement('script');
-        s.src = urls[i];
-        s.onload = () => loadNext(i + 1);
-        s.onerror = () => { document.getElementById('map-div').innerHTML = '<div class="map-loading"><p>Map failed to load — check internet connection</p></div>'; };
-        document.head.appendChild(s);
+    // Scripts are preloaded via <script defer> in <head> — poll until ready
+    if (typeof am5 === 'undefined' || typeof am5map === 'undefined' || typeof am5geodata_worldLow === 'undefined') {
+        document.getElementById('map-div').innerHTML = '<div class="map-loading"><p>Loading map...</p></div>';
+        setTimeout(initMap, 200);
+        return;
     }
-    loadNext(0);
+    buildMap();
 }
 
 function buildMap() {
