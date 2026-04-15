@@ -81,7 +81,7 @@ async function fetchMarket() {
                 return {
                     symbol:                      s.symbol,
                     shortName:                   s.name,
-                    isIndex:                     s.isIndex,
+                    type:                        s.type,
                     regularMarketPrice:          q.c,
                     regularMarketChange:         q.d,
                     regularMarketChangePercent:  q.dp,
