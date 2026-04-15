@@ -36,30 +36,62 @@ function fetch(url) {
     });
 }
 
-// ── Yahoo Finance ─────────────────────────────────────────────────
-const SYMBOLS = ['^IXIC', '^GSPC', '^DJI', 'NVDA', 'AAPL', 'TSLA', 'META', 'MSFT', 'AMZN', 'GOOGL', 'ASML', 'TSM', 'PLTR', 'AMD'];
+// ── Finnhub Market Data ───────────────────────────────────────────
+// Using ETFs as index proxies (Finnhub free tier doesn't support ^IXIC etc)
+const MARKET_SYMBOLS = [
+    { symbol: 'QQQ',  name: 'NASDAQ 100', isIndex: true  },
+    { symbol: 'SPY',  name: 'S&P 500',    isIndex: true  },
+    { symbol: 'DIA',  name: 'Dow Jones',  isIndex: true  },
+    { symbol: 'NVDA', name: 'Nvidia',     isIndex: false },
+    { symbol: 'AAPL', name: 'Apple',      isIndex: false },
+    { symbol: 'TSLA', name: 'Tesla',      isIndex: false },
+    { symbol: 'META', name: 'Meta',       isIndex: false },
+    { symbol: 'MSFT', name: 'Microsoft',  isIndex: false },
+    { symbol: 'AMZN', name: 'Amazon',     isIndex: false },
+    { symbol: 'GOOGL', name: 'Alphabet',  isIndex: false },
+    { symbol: 'ASML', name: 'ASML',       isIndex: false },
+    { symbol: 'TSM',  name: 'TSMC',       isIndex: false },
+    { symbol: 'PLTR', name: 'Palantir',   isIndex: false },
+    { symbol: 'AMD',  name: 'AMD',        isIndex: false },
+];
+
+async function fetchFinnhubQuote(symbol, apiKey) {
+    const url = `https://finnhub.io/api/v1/quote?symbol=${symbol}&token=${apiKey}`;
+    const raw  = await fetch(url);
+    const data = JSON.parse(raw);
+    return { c: data.c, d: data.d, dp: data.dp }; // current, change, change%
+}
 
 async function fetchMarket() {
     if (cache.market && Date.now() - lastFetch.market < MARKET_TTL) return cache.market;
-    const urls = [
-        `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${SYMBOLS.join(',')}&fields=shortName,regularMarketPrice,regularMarketChange,regularMarketChangePercent`,
-        `https://query2.finance.yahoo.com/v7/finance/quote?symbols=${SYMBOLS.join(',')}&fields=shortName,regularMarketPrice,regularMarketChange,regularMarketChangePercent`,
-    ];
-    for (const url of urls) {
-        try {
-            const raw  = await fetch(url);
-            const json = JSON.parse(raw);
-            const quotes = json?.quoteResponse?.result || [];
-            if (quotes.length) {
-                cache.market     = quotes;
-                lastFetch.market = Date.now();
-                return quotes;
-            }
-        } catch (e) {
-            console.error('Market fetch error:', e.message);
+    const apiKey = process.env.FINNHUB_API_KEY;
+    if (!apiKey) { console.warn('FINNHUB_API_KEY not set'); return cache.market || []; }
+    try {
+        const results = await Promise.allSettled(
+            MARKET_SYMBOLS.map(async s => {
+                const q = await fetchFinnhubQuote(s.symbol, apiKey);
+                return {
+                    symbol:                      s.symbol,
+                    shortName:                   s.name,
+                    isIndex:                     s.isIndex,
+                    regularMarketPrice:          q.c,
+                    regularMarketChange:         q.d,
+                    regularMarketChangePercent:  q.dp,
+                };
+            })
+        );
+        const quotes = results
+            .filter(r => r.status === 'fulfilled' && r.value.regularMarketPrice > 0)
+            .map(r => r.value);
+        if (quotes.length) {
+            cache.market     = quotes;
+            lastFetch.market = Date.now();
         }
+        return cache.market || [];
+    } catch (e) {
+        console.error('Market fetch error:', e.message);
+        return cache.market || [];
     }
-    return cache.market || [];
 }
 
 // ── RSS News Feeds ────────────────────────────────────────────────

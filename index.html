@@ -298,8 +298,7 @@ async function fetchAll() {
 }
 
 // ── Market render ──────────────────────────────────────────────────
-const INDEX_MAP = { '^IXIC':'ixic', '^GSPC':'gspc', '^DJI':'dji' };
-const WATCH_SYMS = ['NVDA','AAPL','TSLA','META','MSFT','AMZN','GOOGL','ASML','TSM','PLTR','AMD'];
+const INDEX_MAP = { 'QQQ':'ixic', 'SPY':'gspc', 'DIA':'dji' };
 
 function renderMarket(quotes) {
     if(!quotes || !quotes.length) return;
@@ -312,14 +311,14 @@ function renderMarket(quotes) {
             const chgEl   = document.getElementById(`idx-${key}-chg`);
             if (priceEl) priceEl.textContent = fmtPrice(q.regularMarketPrice);
             if (chgEl) {
-                chgEl.textContent  = fmtChg(q.regularMarketChange) + '  ' + fmtPct(q.regularMarketChangePercent);
-                chgEl.className    = 'index-change ' + chgClass(q.regularMarketChange);
+                chgEl.textContent = fmtChg(q.regularMarketChange) + '  ' + fmtPct(q.regularMarketChangePercent);
+                chgEl.className   = 'index-change ' + chgClass(q.regularMarketChange);
             }
         }
     }
 
-    // Ticker
-    const watchQuotes = quotes.filter(q => WATCH_SYMS.includes(q.symbol));
+    // Ticker — all non-index stocks
+    const watchQuotes = quotes.filter(q => !q.isIndex);
     const tickerItems = [...watchQuotes, ...watchQuotes].map(q => `
         <span class="ticker-item">
             <span class="ticker-symbol">${q.symbol}</span>
@@ -330,18 +329,17 @@ function renderMarket(quotes) {
 
     // Watchlist
     const wb = document.getElementById('watchlist-body');
-    const wItems = watchQuotes.map(q => `
+    wb.innerHTML = watchQuotes.map(q => `
         <div class="watchlist-item">
             <div class="w-left">
                 <div class="w-symbol">${q.symbol}</div>
-                <div class="w-name">${(q.shortName||'').replace(' Corporation','').replace(' Inc.','').replace(', Inc.','').slice(0,20)}</div>
+                <div class="w-name">${q.shortName||''}</div>
             </div>
             <div class="w-right">
                 <div class="w-price">${fmtPrice(q.regularMarketPrice)}</div>
                 <div class="w-change ${chgClass(q.regularMarketChange)}">${fmtPct(q.regularMarketChangePercent)}</div>
             </div>
-        </div>`).join('');
-    wb.innerHTML = wItems || '<div class="loading-state"><p>No data</p></div>';
+        </div>`).join('') || '<div class="loading-state"><p>No data</p></div>';
 }
 
 // ── News render ────────────────────────────────────────────────────
