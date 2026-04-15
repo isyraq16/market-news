@@ -952,6 +952,8 @@ function buildMap() {
             panY: 'translateY',
             projection: am5map.geoNaturalEarth1(),
             paddingBottom: 0, paddingTop: 0, paddingLeft: 0, paddingRight: 0,
+            homeZoomLevel: 1,
+            homeGeoPoint: { longitude: 0, latitude: 20 },
         })
     );
 
@@ -986,6 +988,7 @@ function buildMap() {
                 poly.set('tooltipText', `[bold]${d.name}[/]\n${d.total} stor${d.total===1?'y':'ies'} today\n${d.pos} positive · ${d.neg} negative`);
             }
         });
+        chart.goHome();
     });
 
     // Click a country → filter news
